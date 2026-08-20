@@ -1,0 +1,14 @@
+[
+  {
+    "id": "TAX-001",
+    "category": "Tax Accounts",
+    "title": "Roth IRA vs Traditional IRA",
+    "content": "Traditional IRAs allow pre-tax contributions that reduce current-year taxable income, but withdrawals in retirement are taxed as ordinary income. Roth IRAs use post-tax contributions; qualified withdrawals after age 59.5 (and 5 years after opening) are 100% tax-free, including capital gains and dividends."
+  },
+  {
+    "id": "TAX-002",
+    "category": "Tax Accounts",
+    "title": "Capital Gains Tax Basics",
+    "content": "Short-term capital gains apply to assets held for 1 year or less and are taxed as regular income. Long-term capital gains apply to assets held for more than 1 year and qualify for preferential tax rates (0%, 15%, or 20% depending on income bracket)."
+  }
+]

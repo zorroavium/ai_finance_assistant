@@ -1,0 +1,18 @@
+{
+  "conservative": {
+    "name": "Conservative Income",
+    "holdings": [
+      {"symbol": "BND", "name": "Vanguard Total Bond Market ETF", "shares": 60, "price": 72.50, "category": "Bonds", "expense_ratio": 0.03},
+      {"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "shares": 15, "price": 260.00, "category": "US Equities", "expense_ratio": 0.03},
+      {"symbol": "VXUS", "name": "Vanguard Total Intl Stock ETF", "shares": 10, "price": 60.00, "category": "Intl Equities", "expense_ratio": 0.08}
+    ]
+  },
+  "balanced": {
+    "name": "Moderate Growth (60/40)",
+    "holdings": [
+      {"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "shares": 30, "price": 260.00, "category": "US Equities", "expense_ratio": 0.03},
+      {"symbol": "VXUS", "name": "Vanguard Total Intl Stock ETF", "shares": 25, "price": 60.00, "category": "Intl Equities", "expense_ratio": 0.08},
+      {"symbol": "BND", "name": "Vanguard Total Bond Market ETF", "shares": 40, "price": 72.50, "category": "Bonds", "expense_ratio": 0.03}
+    ]
+  }
+}

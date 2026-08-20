@@ -1,0 +1,20 @@
+[
+  {
+    "id": "PORT-001",
+    "category": "Portfolio Management",
+    "title": "Asset Allocation and the 60/40 Rule",
+    "content": "Asset allocation is the strategy of dividing investments among different asset categories—such as equities, fixed-income bonds, and cash equivalents. The classic 60/40 portfolio allocates 60% to equities for capital appreciation and 40% to bonds for income and downside volatility protection."
+  },
+  {
+    "id": "PORT-002",
+    "category": "Portfolio Management",
+    "title": "Portfolio Rebalancing",
+    "content": "Rebalancing involves periodically buying or selling portions of your portfolio to maintain your target asset allocation. If equities surge, they may grow from 60% to 75% of your portfolio, exposing you to higher risk. Rebalancing brings the mix back to target, enforcing buying low and selling high."
+  },
+  {
+    "id": "PORT-003",
+    "category": "Portfolio Management",
+    "title": "Expense Ratios and Fee Drag",
+    "content": "An expense ratio is the annual percentage fee charged by funds to manage your money. An expense ratio of 1% on a $100,000 portfolio costs $1,000/year, compounding over decades into tens of thousands of dollars lost compared to low-cost index funds charging 0.03% to 0.08%."
+  }
+]

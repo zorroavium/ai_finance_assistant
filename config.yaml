@@ -1,0 +1,20 @@
+# AI Finance Assistant Configuration
+app:
+  name: "AI Finance Assistant"
+  version: "1.0.0"
+  log_level: "INFO"
+
+models:
+  primary_model: "gpt-4o"          # Reasoning, RAG answers, analysis, synthesis
+  router_model: "gpt-4o"           # Fast, deterministic routing
+  embedding_model: "text-embedding-3-small"
+  temperature: 0.2
+
+rag:
+  confidence_threshold: 0.35
+  top_k: 3
+  kb_dir: "src/data/kb"
+
+apis:
+  alpha_vantage_key: ""
+  cache_ttl_minutes: 30

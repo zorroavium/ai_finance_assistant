@@ -1,0 +1,14 @@
+[
+  {
+    "id": "INV-001",
+    "category": "Investing Basics",
+    "title": "Index Funds vs Active Mutual Funds",
+    "content": "An index fund passively tracks a market benchmark (like the S&P 500) with ultra-low expense ratios (often 0.03%-0.10%). Actively managed funds employ managers who attempt to outperform the market, charging higher expense ratios (0.50%-1.50%). Over a 15-year horizon, over 85% of active managers underperform index funds due to fees and turnover drag."
+  },
+  {
+    "id": "INV-002",
+    "category": "Investing Basics",
+    "title": "Dollar-Cost Averaging (DCA)",
+    "content": "Dollar-cost averaging is the strategy of investing a fixed dollar amount at regular intervals regardless of asset price. This removes emotional market-timing risk and ensures you buy more shares when prices are low and fewer when prices are high, lowering average purchase cost over time."
+  }
+]
