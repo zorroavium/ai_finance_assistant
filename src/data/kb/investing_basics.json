@@ -10,5 +10,65 @@
     "category": "Investing Basics",
     "title": "Dollar-Cost Averaging (DCA)",
     "content": "Dollar-cost averaging is the strategy of investing a fixed dollar amount at regular intervals regardless of asset price. This removes emotional market-timing risk and ensures you buy more shares when prices are low and fewer when prices are high, lowering average purchase cost over time."
+  },
+  {
+    "id": "INV-003",
+    "category": "Investing Basics",
+    "title": "Compound Interest Mechanics",
+    "content": "Compound interest is the addition of interest to the principal sum of an investment, or in basic terms, interest on interest. The formula is FV = PV * (1 + r/n)^(nt). Compounding accelerates exponentially over long horizons (20-40 years), making starting early far more impactful than starting with large sums."
+  },
+  {
+    "id": "INV-004",
+    "category": "Investing Basics",
+    "title": "Stocks vs Bonds Fundamentals",
+    "content": "Stocks (equities) represent fractional ownership in a corporation and offer capital appreciation and dividends with higher volatility. Bonds (fixed-income) represent loans made by an investor to a borrower (government or corporate), paying regular interest (coupon) and returning principal at maturity with lower volatility."
+  },
+  {
+    "id": "INV-005",
+    "category": "Investing Basics",
+    "title": "Exchange-Traded Funds (ETFs)",
+    "content": "ETFs are pooled investment vehicles that trade on stock exchanges like individual stocks. They offer high intraday liquidity, low expense ratios, broad diversification, and superior tax efficiency compared to traditional mutual funds due to in-kind creation and redemption mechanisms."
+  },
+  {
+    "id": "INV-006",
+    "category": "Investing Basics",
+    "title": "Market Capitalization Categories",
+    "content": "Market cap equals share price multiplied by total shares outstanding. Mega-cap (> $200B) and Large-cap ($10B-$200B) offer stability and global revenue. Mid-cap ($2B-$10B) balances growth and volatility. Small-cap ($300M-$2B) and Micro-cap offer high growth potential but higher downside risk."
+  },
+  {
+    "id": "INV-007",
+    "category": "Investing Basics",
+    "title": "Dividend Yield and Dividend Growth",
+    "content": "Dividend yield is the annual dividend payout divided by the current share price. High-yield dividend stocks provide income but may indicate slow growth or financial distress. Dividend growth investing focuses on companies consistently increasing dividend payouts over decades (Dividend Aristocrats)."
+  },
+  {
+    "id": "INV-008",
+    "category": "Investing Basics",
+    "title": "Price-to-Earnings (P/E) Ratio",
+    "content": "The P/E ratio measures a company's current share price relative to its per-share earnings. Trailing P/E uses the past 12 months of actual earnings, while Forward P/E uses projected earnings. A high P/E indicates high expected growth or overvaluation; a low P/E suggests value or declining business fundamentals."
+  },
+  {
+    "id": "INV-009",
+    "category": "Investing Basics",
+    "title": "Inflation and Real Rate of Return",
+    "content": "Inflation is the gradual decrease in purchasing power of currency. Nominal return is the raw percentage gain of an investment. Real rate of return equals the nominal return minus the inflation rate. If a portfolio returns 8% and inflation is 3%, the real purchasing power growth is approximately 5%."
+  },
+  {
+    "id": "INV-010",
+    "category": "Investing Basics",
+    "title": "The Rule of 72",
+    "content": "The Rule of 72 is a mental shortcut to estimate the number of years required to double invested money at a given annual fixed interest rate. Dividing 72 by the annual return rate gives the doubling period: at 7% annual return, an investment doubles in approximately 72 / 7 = 10.3 years."
+  },
+  {
+    "id": "INV-011",
+    "category": "Investing Basics",
+    "title": "Treasury Bills, Notes, and Bonds",
+    "content": "US government debt obligations backed by full faith and credit. Treasury Bills (T-Bills) mature in 1 year or less and sell at a discount. Treasury Notes mature in 2 to 10 years and pay semiannual coupons. Treasury Bonds mature in 20 to 30 years and carry higher interest rate duration risk."
+  },
+  {
+    "id": "INV-012",
+    "category": "Investing Basics",
+    "title": "Total Return Concept",
+    "content": "Total return is the complete financial gain of an investment over a period, combining capital appreciation (increase in asset price) and all income generated (dividends, interest distributions) assuming dividends are reinvested."
   }
 ]

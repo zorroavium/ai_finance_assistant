@@ -10,5 +10,53 @@
     "category": "Tax Accounts",
     "title": "Capital Gains Tax Basics",
     "content": "Short-term capital gains apply to assets held for 1 year or less and are taxed as regular income. Long-term capital gains apply to assets held for more than 1 year and qualify for preferential tax rates (0%, 15%, or 20% depending on income bracket)."
+  },
+  {
+    "id": "TAX-003",
+    "category": "Tax Accounts",
+    "title": "401(k) and Employer Match Rules",
+    "content": "A 401(k) is an employer-sponsored retirement account with higher contribution limits than an IRA ($23,000+ per year). Employers frequently match contributions up to a percentage of salary (e.g. 50% match up to 6%). Contributing at least enough to capture the full match provides an instant guaranteed return."
+  },
+  {
+    "id": "TAX-004",
+    "category": "Tax Accounts",
+    "title": "Health Savings Account (HSA) Triple Tax Advantage",
+    "content": "An HSA paired with a High Deductible Health Plan (HDHP) offers a triple tax advantage: 1) Contributions are tax-deductible, 2) Growth and interest compound tax-free, and 3) Withdrawals for qualified medical expenses are 100% tax-free. After age 65, funds can be withdrawn for any purpose with ordinary income tax (like a Traditional IRA)."
+  },
+  {
+    "id": "TAX-005",
+    "category": "Tax Accounts",
+    "title": "Backdoor Roth IRA Strategy",
+    "content": "High-income earners exceeding IRS income limits for direct Roth IRA contributions can use a Backdoor Roth IRA: contribute non-deductible post-tax dollars to a Traditional IRA, then immediately convert those funds to a Roth IRA. Watch for the IRS Pro-Rata rule if pre-tax Traditional IRA balances exist."
+  },
+  {
+    "id": "TAX-006",
+    "category": "Tax Accounts",
+    "title": "Tax-Loss Harvesting",
+    "content": "Tax-loss harvesting involves selling securities at a loss in taxable brokerage accounts to offset realized capital gains. Net losses up to $3,000 per year can also offset ordinary taxable income, with excess losses carried forward indefinitely. Replaced funds must respect the 30-day Wash Sale Rule."
+  },
+  {
+    "id": "TAX-007",
+    "category": "Tax Accounts",
+    "title": "The IRS 30-Day Wash Sale Rule",
+    "content": "The wash-sale rule prohibits claiming a tax loss on the sale of a security if you buy a 'substantially identical' stock or security within a 61-day window (30 days before, the day of sale, or 30 days after). Violating the rule adds the disallowed loss to the cost basis of the newly purchased shares."
+  },
+  {
+    "id": "TAX-008",
+    "category": "Tax Accounts",
+    "title": "Required Minimum Distributions (RMDs)",
+    "content": "The IRS mandates that owners of Traditional IRAs and 401(k)s must begin withdrawing minimum amounts annually once they reach age 73 (SECURE 2.0 Act). Roth IRAs do not have RMD requirements during the original owner's lifetime."
+  },
+  {
+    "id": "TAX-009",
+    "category": "Tax Accounts",
+    "title": "Asset Location Optimization",
+    "content": "Asset location places tax-inefficient assets (high-turnover funds, REITs, high-yield taxable bonds) inside tax-sheltered accounts (IRAs/401ks), while tax-efficient assets (broad index ETFs, long-term buy-and-hold equities, municipal bonds) are held in standard taxable brokerage accounts."
+  },
+  {
+    "id": "TAX-010",
+    "category": "Tax Accounts",
+    "title": "Mega-Backdoor Roth Conversion",
+    "content": "An advanced retirement strategy available in select 401(k) plans allowing employees to make after-tax contributions beyond the standard 401(k) employee limit and immediately convert them in-plan to a Roth 401(k) or Roth IRA, utilizing the total annual contribution ceiling."
   }
 ]

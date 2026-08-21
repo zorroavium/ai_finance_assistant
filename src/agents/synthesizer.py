@@ -50,3 +50,4 @@ def synthesizer_node(state: FinanceAssistantState) -> dict:
 
     final_resp = llm.invoke(messages)
     return {"final_answer": final_resp.content}
+    

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "GLOSS-001",
+    "category": "Financial Glossary",
+    "title": "Glossary: Bull Market vs Bear Market",
+    "content": "A Bull Market is a market condition where asset prices rise or are expected to rise by 20% or more following two consecutive declines. A Bear Market is a prolonged price decline where a major market index falls by 20% or more from recent peak highs."
+  },
+  {
+    "id": "GLOSS-002",
+    "category": "Financial Glossary",
+    "title": "Glossary: Liquidity",
+    "content": "Liquidity describes the ease with which an asset can be converted into ready cash without affecting its market price. Cash and mega-cap stocks are highly liquid; real estate and private equity are illiquid."
+  },
+  {
+    "id": "GLOSS-003",
+    "category": "Financial Glossary",
+    "title": "Glossary: Capital Gain and Capital Loss",
+    "content": "A capital gain is an increase in the value of an asset or investment above the purchase price (cost basis) realized upon sale. A capital loss is the decrease in value incurred when an asset is sold for less than its purchase price."
+  },
+  {
+    "id": "GLOSS-004",
+    "category": "Financial Glossary",
+    "title": "Glossary: Net Asset Value (NAV)",
+    "content": "NAV represents the net value of an entity (such as a mutual fund or ETF) calculated as total assets minus total liabilities divided by total outstanding shares: NAV = (Assets - Liabilities) / Total Shares."
+  },
+  {
+    "id": "GLOSS-005",
+    "category": "Financial Glossary",
+    "title": "Glossary: Volatility (VIX)",
+    "content": "Volatility measures the dispersion and frequency of price fluctuations for a given financial security or market index. The Cboe Volatility Index (VIX) measures 30-day expected market volatility derived from S&P 500 option prices (the 'fear index')."
+  },
+  {
+    "id": "GLOSS-006",
+    "category": "Financial Glossary",
+    "title": "Glossary: Yield Curve Inversion",
+    "content": "A yield curve inversion occurs when short-term government debt instruments (e.g. 2-year Treasuries) offer higher interest yields than long-term instruments (e.g. 10-year Treasuries). Historically, sustained inversions have served as reliable leading indicators of economic recessions."
+  },
+  {
+    "id": "GLOSS-007",
+    "category": "Financial Glossary",
+    "title": "Glossary: Fiduciary Standard vs Suitability Standard",
+    "content": "A fiduciary advisor is legally and ethically bound to act strictly in the client's best interest. A broker operating under the suitability standard only has to recommend products that are suitable, even if higher-commission products generate conflicts of interest."
+  },
+  {
+    "id": "GLOSS-008",
+    "category": "Financial Glossary",
+    "title": "Glossary: Federal Reserve (The Fed) & Federal Funds Rate",
+    "content": "The central banking system of the US. The Federal Funds Rate is the target interest rate set by the Federal Open Market Committee (FOMC) at which commercial banks borrow and lend overnight reserves, influencing borrowing costs across the economy."
+  },
+  {
+    "id": "GLOSS-009",
+    "category": "Financial Glossary",
+    "title": "Glossary: S&P 500 Index (Standard & Poor's 500)",
+    "content": "A market-capitalization-weighted index of 500 leading publicly traded companies in the United States, representing approximately 80% of available market capitalization and serving as the primary benchmark for the US equity market."
+  },
+  {
+    "id": "GLOSS-010",
+    "category": "Financial Glossary",
+    "title": "Glossary: Cost Basis (FIFO vs SpecID)",
+    "content": "Cost basis is the original purchase value of an asset used to calculate taxable capital gains or losses upon sale. Accounting methods include First-In, First-Out (FIFO), Average Cost, and Specific Identification (SpecID) to choose the highest-cost shares."
+  },
+  {
+    "id": "GLOSS-011",
+    "category": "Financial Glossary",
+    "title": "Glossary: Sinking Fund",
+    "content": "A sinking fund is a dedicated savings reserve set aside by an individual or business for a specific planned future expense (e.g. car replacement, property taxes, home renovation), separated from everyday spending and emergency reserves."
+  },
+  {
+    "id": "GLOSS-012",
+    "category": "Financial Glossary",
+    "title": "Glossary: Real Estate Investment Trust (REIT)",
+    "content": "A company that owns, operates, or finances income-generating real estate. IRS tax law requires REITs to distribute at least 90% of taxable income as dividends to shareholders, offering high dividend yields with ordinary income tax treatment."
+  }
+]

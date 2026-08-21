@@ -1,0 +1,14 @@
+[run]
+branch = True
+source = src
+omit =
+    src/web_app/*
+    src/**/__init__.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:

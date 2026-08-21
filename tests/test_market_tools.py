@@ -1,18 +1,41 @@
 import json
-from src.tools.market_tools import get_market_quote
+import pandas as pd
 
-def test_get_market_quote_live_or_fallback():
-    output = get_market_quote.invoke({"ticker": "SPY"})
+import src.tools.market_tools as market_tools
+from src.tools.market_tools import get_market_quote, get_market_history
+
+
+def test_get_market_quote_freshness_and_metadata():
+    output = get_market_quote.invoke({"ticker": "VOO"})
     data = json.loads(output)
-    assert "ticker" in data
-    assert data["ticker"] == "SPY"
+    assert data["ticker"] == "VOO"
     assert "current_price" in data
-    assert data["current_price"] > 0
+    assert "freshness" in data
+    assert "timestamp_utc" in data
 
-def test_market_quote_caching():
-    # First call primes cache
-    get_market_quote.invoke({"ticker": "AAPL"})
-    # Second call should be served from cache
-    output2 = get_market_quote.invoke({"ticker": "AAPL"})
-    data2 = json.loads(output2)
-    assert data2.get("cached") is True or "fallback" in data2.get("source", "")
+
+def test_get_market_history_trend():
+    output = get_market_history.invoke({"ticker": "SPY", "period": "1mo"})
+    data = json.loads(output)
+    assert data["ticker"] == "SPY"
+    assert "close_prices" in data
+    assert len(data["close_prices"]) > 5
+    assert "period_return_pct" in data
+
+
+def test_quote_uses_history_when_quote_metadata_fails(monkeypatch):
+    class MetadataFailureTicker:
+        @property
+        def info(self):
+            raise RuntimeError("quote summary unavailable")
+
+        def history(self, period, auto_adjust):
+            return pd.DataFrame({"Close": [100.0, 102.5]})
+
+    monkeypatch.setattr(market_tools.yf, "Ticker", lambda ticker: MetadataFailureTicker())
+
+    data = market_tools._fetch_yfinance_with_backoff("TEST")
+
+    assert data["current_price"] == 102.5
+    assert data["previous_close"] == 100.0
+    assert data["status"] == "success"

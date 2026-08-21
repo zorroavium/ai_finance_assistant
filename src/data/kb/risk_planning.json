@@ -10,5 +10,53 @@
     "category": "Risk & Planning",
     "title": "Risk Tolerance vs Risk Capacity",
     "content": "Risk tolerance is an investor's psychological willingness to endure market drawdowns without panic selling. Risk capacity is an investor's objective financial ability to take risks based on their time horizon, income stability, and debt obligations."
+  },
+  {
+    "id": "RISK-003",
+    "category": "Risk & Planning",
+    "title": "The 4% Safe Withdrawal Rule",
+    "content": "The Trinity Study 4% rule suggests that a retiree with a 50/50 or 60/40 stock/bond portfolio can withdraw 4% of their initial portfolio balance in year one of retirement, adjusting subsequent annual withdrawals for inflation, with high historical probability that funds last 30 years."
+  },
+  {
+    "id": "RISK-004",
+    "category": "Risk & Planning",
+    "title": "Sequence of Returns Risk (SRR)",
+    "content": "Sequence of returns risk is the danger that the timing of market downturns during the early years of retirement will permanently impair a portfolio's longevity. Experiencing large negative returns when making regular withdrawals forces selling shares at depressed prices."
+  },
+  {
+    "id": "RISK-005",
+    "category": "Risk & Planning",
+    "title": "Debt Payoff Strategies: Avalanche vs Snowball",
+    "content": "The Debt Avalanche method pays minimums on all debts and allocates extra cash to the highest interest rate debt, minimizing total interest paid mathematically. The Debt Snowball method targets the smallest balance first for psychological momentum and quick behavioral wins."
+  },
+  {
+    "id": "RISK-006",
+    "category": "Risk & Planning",
+    "title": "Term Life vs Whole Life Insurance",
+    "content": "Term life insurance covers a specific duration (10-30 years) with low premiums, designed to replace income for dependents. Whole life insurance bundles insurance with an investment cash value component, carrying much higher fees (5-10x) and lower net investment returns than buying term and investing the difference."
+  },
+  {
+    "id": "RISK-007",
+    "category": "Risk & Planning",
+    "title": "High-Yield Savings Accounts (HYSA)",
+    "content": "HYSAs are FDIC-insured bank accounts that pay competitive interest rates (often 4.0%-5.0% depending on Federal Reserve benchmark rates) compared to traditional brick-and-mortar savings accounts (0.01%), making them ideal for emergency reserves and short-term savings."
+  },
+  {
+    "id": "RISK-008",
+    "category": "Risk & Planning",
+    "title": "FIRE Movement Overview (Financial Independence, Retire Early)",
+    "content": "The FIRE movement advocates for high savings rates (50%+ of net income), aggressive frugality, and investing in low-cost index funds to accumulate 25 to 30 times annual expenses, allowing retirement decades ahead of traditional age 65."
+  },
+  {
+    "id": "RISK-009",
+    "category": "Risk & Planning",
+    "title": "Time Horizon and Asset Volatility",
+    "content": "Time horizon is the duration an investor expects to hold an investment before needing the funds. Money needed within 0-3 years belongs in cash equivalents or T-bills. Money with a 10+ year horizon can withstand equity drawdowns and capture market compounding."
+  },
+  {
+    "id": "RISK-010",
+    "category": "Risk & Planning",
+    "title": "Credit Score Optimization (FICO Score Factors)",
+    "content": "FICO credit scores range from 300 to 850, determined by: Payment History (35%), Credit Utilization Ratio (30% - keep below 10-30%), Length of Credit History (15%), Credit Mix (10%), and New Credit Inquiries (10%)."
   }
 ]

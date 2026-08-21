@@ -1,6 +1,6 @@
 """
 AI Finance Assistant — Interactive Multi-Tab Streamlit Dashboard.
-Features: Multi-agent Chat, Portfolio Analytics, Live Market Tickers, and Goal Projections.
+Features: Multi-agent Chat, Portfolio Analytics, Live Market Tickers & Trends, and Goal Projections.
 """
 
 import json
@@ -14,18 +14,16 @@ import plotly.graph_objects as go
 import streamlit as st
 from langchain_core.messages import HumanMessage
 
-# Ensure project root is in sys.path
 _HERE = Path(__file__).resolve().parent.parent.parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from src.core.config import BASE_DIR
 from src.tools.goal_tools import project_goal_growth
-from src.tools.market_tools import get_market_quote
+from src.tools.market_tools import get_market_history, get_market_quote
 from src.tools.portfolio_tools import calculate_portfolio_metrics
 from src.workflow.graph import build_finance_graph
 
-# ── Page Configuration ────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Finance Assistant",
     page_icon="📈",
@@ -36,21 +34,22 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-      .block-container { padding-top: 1.5rem; padding-bottom: 4rem; max-width: 1100px; }
-      [data-testid="stChatMessage"] { border-radius: 12px; margin-bottom: 0.5rem; }
-      .metric-card {
-        background-color: rgba(127,127,127,0.06);
-        border: 1px solid rgba(127,127,127,0.15);
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
+      .block-container {
+        padding-top: 4.5rem !important;
+        padding-bottom: 5rem !important;
+        max-width: 1100px;
       }
-      .disclaimer-box {
-        font-size: 0.8rem;
-        color: #888;
-        border-top: 1px solid #ddd;
-        padding-top: 0.5rem;
-        margin-top: 5rem;
+      .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+      }
+      .stTabs [data-baseweb="tab"] {
+        padding: 8px 16px;
+        font-weight: 500;
+        border-radius: 6px 6px 0 0;
+      }
+      [data-testid="stChatMessage"] {
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
       }
     </style>
     """,
@@ -58,8 +57,7 @@ st.markdown(
 )
 
 
-# ── Cached Graph Singleton ───────────────────────────────────────────
-@st.cache_resource(show_spinner="⏳ Initializing Financial Knowledge Bases and Agents…")
+@st.cache_resource(show_spinner="⏳ Initializing Knowledge Base and Agents…")
 def get_graph():
     return build_finance_graph()
 
@@ -67,7 +65,6 @@ def get_graph():
 graph = get_graph()
 
 
-# ── Session State Management ──────────────────────────────────────────
 def _new_chat() -> str:
     chat_id = str(uuid.uuid4())
     st.session_state.conversations[chat_id] = {
@@ -89,7 +86,7 @@ def _current() -> dict:
     return st.session_state.conversations[st.session_state.current_chat_id]
 
 
-# ── Sidebar Navigation ────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 📈 AI Finance Assistant")
     st.caption("Democratizing Financial Literacy via Multi-Agent AI")
@@ -124,7 +121,9 @@ with st.sidebar:
     st.caption("⚡ Powered by LangGraph, OpenAI & yfinance")
 
 
-# ── Top Level Tabs ────────────────────────────────────────────────────
+st.title("AI Finance Assistant")
+st.caption("Multi-agent financial guidance, real-time analytics, and goal modeling.")
+
 tabs = st.tabs([
     "💬 Chat Assistant",
     "📊 Portfolio Analysis",
@@ -132,13 +131,9 @@ tabs = st.tabs([
     "🎯 Goal Planning",
 ])
 
-# ──────────────────────────────────────────────────────────────────────
-# TAB 1: CHAT ASSISTANT
-# ──────────────────────────────────────────────────────────────────────
+# ── TAB 1: CHAT ASSISTANT ─────────────────────────────────────────────
 with tabs[0]:
     current = _current()
-    st.subheader("Conversational Financial Guide")
-    st.caption("Ask about investment basics, retirement accounts, portfolio strategies, or live stock prices.")
 
     def _render_routing_meta(meta: dict):
         if not meta or not meta.get("agents"):
@@ -148,7 +143,6 @@ with tabs[0]:
             for t in meta.get("tasks", []):
                 st.markdown(f"- **Agent:** `{t['agent']}` | **Focus:** {t['focus']} | **Query:** *{t['query']}*")
 
-    # Render Conversation History
     turn_idx = 0
     for msg in current["messages"]:
         avatar = "🧑" if msg["role"] == "user" else "🤖"
@@ -216,23 +210,28 @@ with tabs[0]:
         st.rerun()
 
 
-# ──────────────────────────────────────────────────────────────────────
-# TAB 2: PORTFOLIO ANALYSIS
-# ──────────────────────────────────────────────────────────────────────
+# ── TAB 2: PORTFOLIO ANALYSIS ─────────────────────────────────────────
 with tabs[1]:
     st.subheader("Portfolio Allocation & Health Check")
 
-    # Load Sample Portfolios
     sample_file = BASE_DIR / "src/data/sample_portfolios.json"
     sample_data = {}
     if sample_file.exists():
         with open(sample_file, "r") as f:
             sample_data = json.load(f)
 
-    portfolio_mode = st.selectbox(
-        "Choose Portfolio Template or Custom Input:",
-        ["Moderate Growth (60/40)", "Conservative Income", "Custom JSON Input"],
-    )
+    col_p1, col_p2 = st.columns([3, 2])
+    with col_p1:
+        portfolio_mode = st.selectbox(
+            "Choose Portfolio Template or Custom Input:",
+            ["Moderate Growth (60/40)", "Conservative Income", "Custom JSON Input"],
+        )
+    with col_p2:
+        risk_appetite = st.selectbox(
+            "Target Risk Appetite:",
+            ["Conservative", "Moderate", "Aggressive"],
+            index=1,
+        )
 
     if portfolio_mode == "Moderate Growth (60/40)":
         holdings = sample_data.get("balanced", {}).get("holdings", [])
@@ -246,7 +245,7 @@ with tabs[1]:
                 {"symbol": "VXUS", "shares": 30, "price": 60.0, "category": "Intl Equities", "expense_ratio": 0.08},
                 {"symbol": "BND", "shares": 25, "price": 72.0, "category": "Bonds", "expense_ratio": 0.03},
             ], indent=2),
-            height=150,
+            height=130,
         )
         try:
             holdings = json.loads(raw_json)
@@ -259,38 +258,58 @@ with tabs[1]:
         st.markdown("##### Current Holdings")
         st.dataframe(df_holdings, use_container_width=True)
 
-        res_str = calculate_portfolio_metrics.invoke({"holdings_json": json.dumps(holdings)})
+        res_str = calculate_portfolio_metrics.invoke({
+            "holdings_json": json.dumps(holdings),
+            "user_risk_appetite": risk_appetite,
+        })
         res_data = json.loads(res_str)
 
         if "total_value" in res_data:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Total Portfolio Value", f"${res_data['total_value']:,.2f}")
-            c2.metric("Weighted Expense Ratio", f"{res_data['weighted_expense_ratio_pct']:.3f}%")
-            c3.metric("Asset Classes", f"{len(res_data['allocation_percentages'])}")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Total Value", f"${res_data['total_value']:,.2f}")
+            c2.metric("Weighted Exp Ratio", f"{res_data['weighted_expense_ratio_pct']:.3f}%")
+            c3.metric("Diversification Score", f"{res_data.get('diversification_score', 0)} / 100")
+            c4.metric("Risk Status", res_data.get("risk_alignment", "Aligned"))
 
-            # Visualizations
+            st.info(f"💡 **Assessment & Recommendation:** {res_data.get('recommendation', '')}")
+
+            if res_data.get("concentrated_positions"):
+                st.warning(f"⚠️ **Concentration Risk Flag (>25% position):** {', '.join(res_data['concentrated_positions'])}")
+
             st.markdown("##### Asset Allocation Breakdown")
             alloc_df = pd.DataFrame(
                 list(res_data["allocation_percentages"].items()),
                 columns=["Category", "Percentage"],
             )
 
-            fig = px.pie(
-                alloc_df,
-                names="Category",
-                values="Percentage",
-                hole=0.45,
-                color_discrete_sequence=px.colors.qualitative.Pastel,
-            )
-            fig.update_traces(textposition="inside", textinfo="percent+label")
-            st.plotly_chart(fig, use_container_width=True)
+            col_pie, col_bar = st.columns(2)
+            with col_pie:
+                fig_pie = px.pie(
+                    alloc_df,
+                    names="Category",
+                    values="Percentage",
+                    hole=0.45,
+                    title="Allocation Distribution",
+                    color_discrete_sequence=px.colors.qualitative.Pastel,
+                )
+                fig_pie.update_traces(textposition="inside", textinfo="percent+label")
+                st.plotly_chart(fig_pie, use_container_width=True)
+
+            with col_bar:
+                fig_bar = px.bar(
+                    alloc_df,
+                    x="Category",
+                    y="Percentage",
+                    title="Allocation Weights (%)",
+                    color="Category",
+                    color_discrete_sequence=px.colors.qualitative.Pastel,
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
 
 
-# ──────────────────────────────────────────────────────────────────────
-# TAB 3: MARKET OVERVIEW
-# ──────────────────────────────────────────────────────────────────────
+# ── TAB 3: MARKET OVERVIEW ────────────────────────────────────────────
 with tabs[2]:
-    st.subheader("Live Market Quotes & Ticker Analytics")
+    st.subheader("Live Market Quotes & Trend Analytics")
     col_search, _ = st.columns([2, 2])
     with col_search:
         ticker_input = st.text_input("Enter Stock / ETF Symbol:", value="VOO").upper()
@@ -300,64 +319,102 @@ with tabs[2]:
         quote_data = json.loads(quote_str)
 
         if "current_price" in quote_data:
+            fresh_badge = quote_data.get("freshness", "LIVE")
+            ts = quote_data.get("timestamp_utc", "")
+            st.caption(f"Status: `{fresh_badge}` • Timestamp: `{ts}`")
+
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Current Price", f"${quote_data['current_price']:.2f}")
             m2.metric("Daily Change", quote_data.get("change_percent", "N/A"))
             m3.metric("52-Week High", f"${quote_data.get('fifty_two_week_high', 0) or 0:.2f}")
             m4.metric("52-Week Low", f"${quote_data.get('fifty_two_week_low', 0) or 0:.2f}")
 
-            st.json(quote_data)
+            # Historical Trend Chart
+            hist_str = get_market_history.invoke({"ticker": ticker_input, "period": "6mo"})
+            hist_data = json.loads(hist_str)
+
+            if "close_prices" in hist_data:
+                st.markdown(f"##### 6-Month Price Trend ({hist_data.get('period_return_pct', 0):+.2f}% Return)")
+                df_hist = pd.DataFrame({
+                    "Date": pd.to_datetime(hist_data["dates"]),
+                    "Close": hist_data["close_prices"],
+                })
+                fig_trend = px.line(
+                    df_hist,
+                    x="Date",
+                    y="Close",
+                    title=f"{ticker_input} 6-Month Historical Performance",
+                    template="plotly_white",
+                )
+                fig_trend.update_traces(line_color="#2E7D32" if hist_data.get("period_return_pct", 0) >= 0 else "#C62828")
+                st.plotly_chart(fig_trend, use_container_width=True)
         else:
             st.error(quote_data.get("error", "Could not fetch ticker details."))
 
 
-# ──────────────────────────────────────────────────────────────────────
-# TAB 4: GOAL PLANNING
-# ──────────────────────────────────────────────────────────────────────
+# ── TAB 4: GOAL PLANNING ──────────────────────────────────────────────
 with tabs[3]:
-    st.subheader("Financial Goal & Compound Growth Projections")
+    st.subheader("Risk-Aware Financial Goal & Wealth Projections")
 
-    g1, g2 = st.columns(2)
+    g1, g2, g3 = st.columns(3)
     with g1:
         init_deposit = st.number_input("Initial Investment ($):", value=5000, step=500)
         monthly_contrib = st.number_input("Monthly Contribution ($):", value=500, step=50)
     with g2:
-        return_rate = st.slider("Expected Annual Return (%):", min_value=1.0, max_value=15.0, value=7.5, step=0.5)
+        risk_profile = st.selectbox("Investor Risk Profile:", ["Conservative", "Moderate", "Aggressive"], index=1)
         years = st.slider("Investment Horizon (Years):", min_value=1, max_value=40, value=20, step=1)
+    with g3:
+        custom_rate = st.checkbox("Custom Return Override")
+        override_rate = st.number_input("Custom Return Rate (%):", value=7.5, step=0.5) if custom_rate else None
 
     proj_str = project_goal_growth.invoke({
         "initial_amount": float(init_deposit),
         "monthly_contribution": float(monthly_contrib),
-        "annual_return_pct": float(return_rate),
         "years": int(years),
+        "risk_profile": risk_profile,
+        "annual_return_pct": float(override_rate) if override_rate else None,
     })
     proj_data = json.loads(proj_str)
 
-    p1, p2, p3 = st.columns(3)
-    p1.metric("Projected Total Wealth", f"${proj_data['projected_value']:,.2f}")
-    p2.metric("Total Contributed", f"${proj_data['total_contributed']:,.2f}")
-    p3.metric("Total Growth / Interest", f"${proj_data['total_growth_interest']:,.2f}")
+    p1, p2, p3, p4 = st.columns(4)
+    p1.metric("Projected Median Wealth", f"${proj_data['projected_median_value']:,.2f}")
+    p2.metric("Total Principal Contributed", f"${proj_data['total_contributed']:,.2f}")
+    p3.metric("Pessimistic Scenario", f"${proj_data['pessimistic_band_value']:,.2f}")
+    p4.metric("Optimistic Scenario", f"${proj_data['optimistic_band_value']:,.2f}")
 
-    # Generate growth curve
+    st.info(f"🎯 **Suggested Strategy:** {proj_data.get('recommended_asset_mix', '')} at ~{proj_data.get('assumed_annual_return', '')} expected return.")
+
+    # Multi-scenario growth curve
     year_points = list(range(0, years + 1))
     contrib_points = []
-    total_points = []
+    median_points = []
+    low_points = []
+    high_points = []
 
-    r = (return_rate / 100.0) / 12.0
-    for y in year_points:
+    profile_rates = {"Conservative": (3.0, 4.5, 6.0), "Moderate": (5.0, 7.5, 10.0), "Aggressive": (6.5, 10.0, 13.5)}
+    r_low, r_med, r_high = profile_rates[risk_profile]
+    if override_rate:
+        r_med = override_rate
+
+    def _fv(r_pct, y):
+        r = (r_pct / 100.0) / 12.0
         n = y * 12
-        if r == 0:
-            fv = init_deposit + (monthly_contrib * n)
-        else:
-            fv = (init_deposit * ((1 + r) ** n)) + (monthly_contrib * (((1 + r) ** n - 1) / r))
-        contrib_points.append(init_deposit + (monthly_contrib * n))
-        total_points.append(fv)
+        return init_deposit + (monthly_contrib * n) if r == 0 else (init_deposit * ((1 + r) ** n)) + (monthly_contrib * (((1 + r) ** n - 1) / r))
+
+    for y in year_points:
+        contrib_points.append(init_deposit + (monthly_contrib * y * 12))
+        median_points.append(_fv(r_med, y))
+        low_points.append(_fv(r_low, y))
+        high_points.append(_fv(r_high, y))
 
     fig_growth = go.Figure()
-    fig_growth.add_trace(go.Scatter(x=year_points, y=contrib_points, name="Principal Contributed", fill="tozeroy"))
-    fig_growth.add_trace(go.Scatter(x=year_points, y=total_points, name="Projected Balance (Compound Growth)", fill="tonexty"))
+    fig_growth.add_trace(go.Scatter(x=year_points, y=high_points, name="Optimistic Market Band", line=dict(dash="dot", color="#4CAF50")))
+    fig_growth.add_trace(go.Scatter(x=year_points, y=median_points, name="Expected Median Growth", line=dict(color="#1976D2", width=3)))
+    fig_growth.add_trace(go.Scatter(x=year_points, y=low_points, name="Conservative Market Band", line=dict(dash="dot", color="#FF9800")))
+    fig_growth.add_trace(go.Scatter(x=year_points, y=contrib_points, name="Principal Contributed", line=dict(dash="dash", color="#757575")))
+
     fig_growth.update_layout(
-        title="Wealth Accumulation Over Time",
+        title=f"Multi-Scenario Wealth Accumulation ({risk_profile} Profile)",
         xaxis_title="Years",
         yaxis_title="Portfolio Value ($)",
         template="plotly_white",

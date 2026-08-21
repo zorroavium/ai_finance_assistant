@@ -8,7 +8,7 @@
   {
     "id": "PORT-002",
     "category": "Portfolio Management",
-    "title": "Portfolio Rebalancing",
+    "title": "Portfolio Rebalancing Strategies",
     "content": "Rebalancing involves periodically buying or selling portions of your portfolio to maintain your target asset allocation. If equities surge, they may grow from 60% to 75% of your portfolio, exposing you to higher risk. Rebalancing brings the mix back to target, enforcing buying low and selling high."
   },
   {
@@ -16,5 +16,47 @@
     "category": "Portfolio Management",
     "title": "Expense Ratios and Fee Drag",
     "content": "An expense ratio is the annual percentage fee charged by funds to manage your money. An expense ratio of 1% on a $100,000 portfolio costs $1,000/year, compounding over decades into tens of thousands of dollars lost compared to low-cost index funds charging 0.03% to 0.08%."
+  },
+  {
+    "id": "PORT-004",
+    "category": "Portfolio Management",
+    "title": "The Bogleheads Three-Fund Portfolio",
+    "content": "The Three-Fund Portfolio is a simple, low-cost investment strategy consisting of: 1) Total US Stock Market Index (e.g. VTI), 2) Total International Stock Index (e.g. VXUS), and 3) Total US Bond Market Index (e.g. BND). It provides comprehensive global diversification with minimal expense ratios."
+  },
+  {
+    "id": "PORT-005",
+    "category": "Portfolio Management",
+    "title": "Modern Portfolio Theory & Efficient Frontier",
+    "content": "Modern Portfolio Theory (MPT), pioneered by Harry Markowitz, posits that an asset's risk and return should not be assessed alone, but by how it contributes to an overall portfolio. By combining uncorrelated asset classes, investors maximize expected return for a given level of market risk."
+  },
+  {
+    "id": "PORT-006",
+    "category": "Portfolio Management",
+    "title": "Beta and Volatility Measurement",
+    "content": "Beta measures the volatility or systemic risk of a security or portfolio relative to the broader market (S&P 500 benchmarked at Beta = 1.0). A Beta > 1.0 indicates higher volatility than the market, while Beta < 1.0 represents lower market sensitivity (e.g., utility stocks or consumer staples)."
+  },
+  {
+    "id": "PORT-007",
+    "category": "Portfolio Management",
+    "title": "Sharpe Ratio Explained",
+    "content": "The Sharpe Ratio evaluates risk-adjusted return by subtracting the risk-free rate (e.g., 3-month T-Bills) from the portfolio return and dividing by the standard deviation of returns: (Rp - Rf) / Sigma. A Sharpe ratio > 1.0 is considered good, and > 2.0 is considered very good."
+  },
+  {
+    "id": "PORT-008",
+    "category": "Portfolio Management",
+    "title": "Target Date Retirement Funds (TDFs)",
+    "content": "Target Date Funds automatically adjust asset allocation over time along a predefined 'glide path'. When decades away from retirement, the fund holds high equity percentages for growth; as the target date approaches, it automatically shifts heavily into bonds and cash to preserve capital."
+  },
+  {
+    "id": "PORT-009",
+    "category": "Portfolio Management",
+    "title": "Concentration Risk in Single Stocks",
+    "content": "Concentration risk occurs when a substantial portion of an investor's total net worth is allocated to a single company or sector (e.g., > 15-20%). While single stocks offer high upside, they carry uncompensated idiosyncratic risk (business failure, litigation, fraud) that index funds eliminate."
+  },
+  {
+    "id": "PORT-010",
+    "category": "Portfolio Management",
+    "title": "International Diversification (Home Bias)",
+    "content": "Home bias is the tendency of investors to overly concentrate holdings in their domestic equity market. Allocating 20% to 40% of equity exposure to international markets (developed and emerging) reduces country-specific economic risk and captures global growth trends."
   }
 ]
