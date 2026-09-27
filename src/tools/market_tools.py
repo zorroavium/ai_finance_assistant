@@ -4,6 +4,8 @@ Features: In-memory TTL caching, exponential backoff retries, and freshness trac
 """
 
 import json
+import difflib
+import re
 import time
 from datetime import datetime, timezone
 from typing import Optional
@@ -28,6 +30,38 @@ _FALLBACK_QUOTES = {
     "AAPL": {"price": 220.50, "change_pct": 1.15, "name": "Apple Inc.", "pe_ratio": 33.2},
     "MSFT": {"price": 445.00, "change_pct": 0.65, "name": "Microsoft Corporation", "pe_ratio": 35.8},
 }
+
+def _search_symbol(query: str) -> str | None:
+    """Resolve a company or fund name through Yahoo Finance search."""
+    try:
+        for quote in yf.Search(query).quotes:
+            quote_type = str(quote.get("quoteType", "")).upper()
+            symbol = quote.get("symbol")
+            if symbol and quote_type in {"EQUITY", "ETF"}:
+                return str(symbol).upper()
+    except Exception:
+        return None
+    return None
+
+
+def normalize_ticker(value: str) -> str:
+    """Normalize a symbol or dynamically resolve a company/fund name."""
+    cleaned = " ".join(value.upper().strip().split())
+    if re.fullmatch(r"[A-Z0-9.\-]{1,5}", cleaned):
+        return cleaned
+    return _search_symbol(value) or cleaned
+
+
+def _ticker_suggestion(ticker: str) -> str | None:
+    """Return a likely correction for a mistyped common ticker."""
+    matches = difflib.get_close_matches(ticker, list(_FALLBACK_QUOTES), n=1, cutoff=0.75)
+    return matches[0] if matches else None
+
+
+def clear_market_cache() -> None:
+    """Clear quote and history caches after a user-requested refresh."""
+    _MARKET_CACHE.clear()
+    _HISTORY_CACHE.clear()
 
 
 class MarketQuoteInput(BaseModel):
@@ -108,7 +142,15 @@ def _fetch_yfinance_with_backoff(ticker: str, max_retries: int = 3) -> dict:
 @tool(args_schema=MarketQuoteInput)
 def get_market_quote(ticker: str) -> str:
     """Retrieve real-time market price, daily change, and freshness metadata for a stock or ETF."""
-    clean_ticker = ticker.upper().strip()
+    original_ticker = ticker
+    clean_ticker = normalize_ticker(ticker)
+    if not re.fullmatch(r"[A-Z0-9.\-]{1,10}", clean_ticker):
+        return json.dumps({
+            "ticker": clean_ticker,
+            "input": original_ticker,
+            "status": "failed",
+            "error": "Ticker symbols may contain only letters, numbers, periods, or hyphens.",
+        })
     now = time.time()
 
     # 1. Check in-memory TTL cache
@@ -132,6 +174,7 @@ def get_market_quote(ticker: str) -> str:
             fb = _FALLBACK_QUOTES[clean_ticker]
             return json.dumps({
                 "ticker": clean_ticker,
+                "input": original_ticker,
                 "name": fb["name"],
                 "current_price": fb["price"],
                 "change_percent": f"{fb['change_pct']:+.2f}%",
@@ -142,8 +185,10 @@ def get_market_quote(ticker: str) -> str:
             }, indent=2)
 
         return json.dumps({
+            "input": original_ticker,
             "error": f"Failed to retrieve market data for {clean_ticker}: {str(e)}",
             "status": "failed",
+            "suggested_ticker": _ticker_suggestion(clean_ticker),
         })
 
 

@@ -22,6 +22,49 @@ class GoalProjectionInput(BaseModel):
     )
 
 
+def calculate_savings_plan(
+    goal_amount: float,
+    timeline_years: int,
+    current_savings: float = 0.0,
+    expected_return: float = 0.07,
+) -> dict:
+    """Calculate the monthly contribution required to reach a savings goal."""
+    months = timeline_years * 12
+    monthly_rate = expected_return / 12
+
+    if months <= 0:
+        raise ValueError("timeline_years must be greater than zero")
+
+    current_future_value = current_savings * ((1 + monthly_rate) ** months)
+    remaining = max(0.0, goal_amount - current_future_value)
+    if monthly_rate == 0:
+        monthly_contribution = remaining / months
+    else:
+        monthly_contribution = remaining * monthly_rate / (((1 + monthly_rate) ** months) - 1)
+
+    balance = current_savings
+    total_contributions = 0.0
+    interest_earned = 0.0
+    balances = [balance]
+    for _ in range(months):
+        interest = balance * monthly_rate
+        balance += interest + monthly_contribution
+        interest_earned += interest
+        total_contributions += monthly_contribution
+        balances.append(balance)
+
+    return {
+        "goal_amount": goal_amount,
+        "timeline_years": timeline_years,
+        "current_savings": current_savings,
+        "monthly_contribution_required": round(monthly_contribution, 2),
+        "total_contributions": round(total_contributions, 2),
+        "interest_earned": round(interest_earned, 2),
+        "final_balance": round(balance, 2),
+        "surplus": round(balance - goal_amount, 2),
+        "feasible": monthly_contribution <= 10000,
+        "monthly_balances": balances,
+    }
 @tool(args_schema=GoalProjectionInput)
 def project_goal_growth(
     initial_amount: float,

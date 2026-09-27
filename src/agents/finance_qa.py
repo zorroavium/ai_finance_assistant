@@ -2,11 +2,14 @@
 Finance Q&A Agent — Answers general financial education questions grounded in the KB.
 """
 
+import json
+
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 
-from src.core.config import CONFIG, OPENAI_API_KEY
-from src.rag.retriever import search_financial_kb
+from src.agents.base import contextualize_query
+from src.core.config import CONFIG, get_openai_api_key
+from src.rag.retriever import search_financial_kb, validate_and_format_citations
 from src.workflow.state import FinanceAssistantState
 
 PRIMARY_MODEL = CONFIG.get("models", {}).get("primary_model", "gpt-4o")
@@ -32,13 +35,13 @@ def finance_qa_node(state: FinanceAssistantState) -> dict:
             query = getattr(task, "query", query) if hasattr(task, "query") else task.get("query", query)
             break
 
-    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=TEMPERATURE, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=TEMPERATURE, api_key=get_openai_api_key())
     tools = [search_financial_kb]
     llm_with_tools = llm.bind_tools(tools)
 
     messages = [
         SystemMessage(content=QA_SYSTEM_PROMPT),
-        HumanMessage(content=f"Explain the following financial concept: {query}")
+        HumanMessage(content=contextualize_query(f"Explain the following financial concept: {query}", state))
     ]
 
     response = llm_with_tools.invoke(messages)
@@ -46,15 +49,20 @@ def finance_qa_node(state: FinanceAssistantState) -> dict:
 
     # Tool Execution Loop
     if response.tool_calls:
+        retrieved_docs = []
         for tool_call in response.tool_calls:
             tool_res = search_financial_kb.invoke(tool_call["args"])
+            try:
+                retrieved_docs.extend(json.loads(tool_res).get("results", []))
+            except (TypeError, ValueError):
+                pass
             messages.append(ToolMessage(
                 content=str(tool_res),
                 tool_call_id=tool_call["id"],
                 name="search_financial_kb"
             ))
         final_resp = llm.invoke(messages)
-        content = final_resp.content
+        content = validate_and_format_citations(final_resp.content, retrieved_docs)
     else:
         content = response.content
 

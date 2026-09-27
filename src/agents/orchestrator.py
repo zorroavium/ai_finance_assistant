@@ -4,13 +4,13 @@ and routes tasks dynamically using LangGraph Send API.
 """
 
 import time
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_openai import ChatOpenAI
+
 from langgraph.types import Send
 
-from src.core.config import CONFIG, OPENAI_API_KEY
+from src.agents.router import RouterAgent
+from src.core.config import CONFIG
 from src.core.logger import log_routing
-from src.workflow.state import FinanceAssistantState, RoutingDecision
+from src.workflow.state import AgentTask, FinanceAssistantState
 
 ROUTER_MODEL = CONFIG.get("models", {}).get("router_model", "gpt-4o")
 
@@ -37,26 +37,81 @@ ROUTING RULES:
 
 
 def classify_query(state: FinanceAssistantState) -> dict:
-    """Classifies user intent and produces structured routing decision."""
+    """Classifies user intent and produces structured routing decision.
+
+    The active app routes a single query to one or more specialist agents based on
+    explicit keyword signals, which matches the reference multi-agent workflow.
+    """
     start_time = time.time()
     user_query = state.get("user_query", "")
+    query = user_query.lower()
 
-    llm = ChatOpenAI(model=ROUTER_MODEL, temperature=0.0, api_key=OPENAI_API_KEY)
-    structured_llm = llm.with_structured_output(RoutingDecision)
+    router = RouterAgent({
+        "finance_qa": object(),
+        "portfolio_agent": object(),
+        "market_agent": object(),
+        "goal_agent": object(),
+        "tax_agent": object(),
+        "news_agent": object(),
+        "general_chat": object(),
+    })
 
-    messages = [
-        SystemMessage(content=ORCHESTRATOR_SYSTEM_PROMPT),
-        HumanMessage(content=user_query)
+    detected_agents = []
+
+    if any(keyword in query for keyword in ["portfolio", "allocation", "holdings", "diversification"]):
+        detected_agents.append("portfolio_agent")
+    if any(keyword in query for keyword in ["ticker", "stock", "etf", "market", "spy", "voo", "price", "trend", "nasdaq", "s&p", "index"]):
+        detected_agents.append("market_agent")
+    if any(keyword in query for keyword in ["retirement", "goal", "savings", "compound", "wealth", "milestone", "emergency fund", "401k plan"]):
+        detected_agents.append("goal_agent")
+    if any(keyword in query for keyword in ["tax", "roth", "traditional ira", "ira contribution", "capital gains", "hsa", "401k"]):
+        detected_agents.append("tax_agent")
+    if any(keyword in query for keyword in ["news", "interest rate", "fed", "inflation", "earnings", "market sentiment", "macro"]):
+        detected_agents.append("news_agent")
+    if any(keyword in query for keyword in ["hello", "hi", "thanks", "goodbye", "greeting"]):
+        detected_agents.append("general_chat")
+
+    if not detected_agents:
+        detected_agents = [router._fallback_route({"query": user_query})]
+    else:
+        unique = []
+        for agent_name in detected_agents:
+            if agent_name not in unique:
+                unique.append(agent_name)
+        detected_agents = unique
+
+    tasks = [
+        AgentTask(
+            agent=agent_name,
+            query=_scoped_query(agent_name, user_query),
+            focus=agent_name.replace("_agent", ""),
+        )
+        for agent_name in detected_agents
     ]
 
-    decision: RoutingDecision = structured_llm.invoke(messages)
+    requires_synthesis = len(tasks) > 1
     elapsed = f"{(time.time() - start_time) * 1000:.0f}ms"
-    log_routing(decision.tasks, decision.requires_synthesis, elapsed)
+    log_routing(tasks, requires_synthesis, elapsed)
 
     return {
-        "tasks": decision.tasks,
-        "requires_synthesis": decision.requires_synthesis
+        "tasks": tasks,
+        "requires_synthesis": requires_synthesis,
     }
+
+
+def _scoped_query(agent_name: str, query: str) -> str:
+    """Give each specialist a focused request while preserving the original wording."""
+    if agent_name == "market_agent":
+        return f"Market data portion of the request: {query}"
+    if agent_name == "tax_agent":
+        return f"Tax education portion of the request: {query}"
+    if agent_name == "portfolio_agent":
+        return f"Portfolio analysis portion of the request: {query}"
+    if agent_name == "goal_agent":
+        return f"Financial goal portion of the request: {query}"
+    if agent_name == "news_agent":
+        return f"Current news portion of the request: {query}"
+    return query
 
 
 def dispatch_to_agents(state: FinanceAssistantState):

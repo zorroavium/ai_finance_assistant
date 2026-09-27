@@ -6,7 +6,7 @@ with citations and educational disclaimers.
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
-from src.core.config import CONFIG, OPENAI_API_KEY
+from src.core.config import CONFIG, get_openai_api_key
 from src.workflow.state import FinanceAssistantState
 
 PRIMARY_MODEL = CONFIG.get("models", {}).get("primary_model", "gpt-4o")
@@ -38,7 +38,7 @@ def synthesizer_node(state: FinanceAssistantState) -> dict:
         return {"final_answer": f"{res_text}{disclaimer}"}
 
     # Parallel synthesis pass
-    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=0.1, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=0.1, api_key=get_openai_api_key())
     combined_inputs = "\n\n".join(
         f"### Result from {r.get('agent')}:\n{r.get('result')}" for r in results
     )

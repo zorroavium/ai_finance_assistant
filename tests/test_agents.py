@@ -9,6 +9,7 @@ from src.agents.market_agent import market_agent_node
 from src.agents.news_agent import news_agent_node
 from src.agents.portfolio_agent import portfolio_agent_node
 from src.agents.tax_agent import tax_agent_node
+from src.agents.market_agent import _extract_ticker
 
 
 def test_portfolio_agent_execution_with_tools():
@@ -37,6 +38,10 @@ def test_market_agent_execution_with_quote():
     output = market_agent_node(state)
     assert len(output["agent_results"]) == 1
     assert output["agent_results"][0]["agent"] == "market_agent"
+
+
+def test_market_agent_extracts_ticker_from_scoped_query():
+    assert _extract_ticker("Market data portion of the request: What is the price of MSFT today?") == "MSFT"
 
 
 def test_news_agent_execution():

@@ -8,9 +8,8 @@ from typing import Optional
 import numpy as np
 from openai import OpenAI
 
-from src.core.config import OPENAI_API_KEY, CONFIG
+from src.core.config import CONFIG, get_openai_api_key
 
-_client = OpenAI(api_key=OPENAI_API_KEY)
 EMBEDDING_MODEL = CONFIG.get("models", {}).get("embedding_model", "text-embedding-3-small")
 
 
@@ -18,7 +17,8 @@ def _embed_batch(texts: list[str]) -> list[list[float]]:
     """Embed a list of strings using OpenAI API."""
     if not texts:
         return []
-    resp = _client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+    client = OpenAI(api_key=get_openai_api_key())
+    resp = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
     return [item.embedding for item in resp.data]
 
 

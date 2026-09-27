@@ -4,6 +4,7 @@ Features: Multi-agent Chat, Portfolio Analytics, Live Market Tickers & Trends, a
 """
 
 import json
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -12,15 +13,16 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 _HERE = Path(__file__).resolve().parent.parent.parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from src.core.config import BASE_DIR
-from src.tools.goal_tools import project_goal_growth
-from src.tools.market_tools import get_market_history, get_market_quote
+from src.core.config import BASE_DIR, set_runtime_api_keys, get_openai_api_key
+from src.rag.retriever import search_financial_kb
+from src.tools.goal_tools import calculate_savings_plan, project_goal_growth
+from src.tools.market_tools import clear_market_cache, get_market_history, get_market_quote
 from src.tools.portfolio_tools import calculate_portfolio_metrics
 from src.workflow.graph import build_finance_graph
 
@@ -80,16 +82,197 @@ def _new_chat() -> str:
 if "conversations" not in st.session_state:
     st.session_state.conversations = {}
     _new_chat()
+if "active_portfolio" not in st.session_state:
+    st.session_state.active_portfolio = {}
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = {
+        "experience_level": "Beginner",
+        "goals": [],
+    }
 
 
 def _current() -> dict:
     return st.session_state.conversations[st.session_state.current_chat_id]
 
 
+def _invoke_graph(prompt: str) -> dict:
+    """Invoke the same contextual workflow used by the Chat tab."""
+    current = _current()
+    history = list(current["messages"]) + [{"role": "user", "content": prompt}]
+    return graph.invoke(
+        {
+            "user_query": prompt,
+            "messages": [
+                HumanMessage(content=item["content"])
+                if item["role"] == "user"
+                else AIMessage(content=item["content"])
+                for item in history
+            ],
+            "user_profile": st.session_state.user_profile,
+            "portfolio": st.session_state.active_portfolio,
+            "context": {
+                "user_profile": st.session_state.user_profile,
+                "portfolio": st.session_state.active_portfolio,
+                "conversation_history": [
+                    f"{item['role']}: {item['content']}" for item in history
+                ],
+            },
+            "conversation_history": [
+                f"{item['role']}: {item['content']}" for item in history
+            ],
+            "tasks": [],
+            "requires_synthesis": False,
+            "agent_results": None,
+            "qa_messages": None,
+            "portfolio_messages": None,
+            "market_messages": None,
+            "goal_messages": None,
+            "news_messages": None,
+            "tax_messages": None,
+        },
+        config={"configurable": {"thread_id": current["thread_id"]}},
+    )
+
+
+@st.cache_data(ttl=300)
+def _get_market_indices() -> list[dict]:
+    indices = [("SPY", "S&P 500"), ("QQQ", "NASDAQ 100"), ("DIA", "Dow Jones"), ("VTI", "Total Market")]
+    data = []
+    for ticker, label in indices:
+        try:
+            quote = json.loads(get_market_quote.invoke({"ticker": ticker}))
+            data.append({"ticker": ticker, "label": label, **quote})
+        except Exception as exc:
+            data.append({"ticker": ticker, "label": label, "error": str(exc)})
+    return data
+
+
+def _clear_current_chat() -> None:
+    current = _current()
+    current["messages"] = []
+    current["turns"] = []
+    current["title"] = "New Session"
+
+
+def _render_api_configuration() -> None:
+    with st.expander("🔑 API Configuration", expanded=False):
+        st.caption("Keys are kept in runtime session state and are not written to project files.")
+        openai_key = st.text_input(
+            "OpenAI API key",
+            value=st.session_state.get("openai_api_key_input", ""),
+            type="password",
+            key="openai_api_key_input",
+        )
+        tavily_key = st.text_input(
+            "Tavily API key (optional news search)",
+            value=st.session_state.get("tavily_api_key_input", ""),
+            type="password",
+            key="tavily_api_key_input",
+        )
+        if st.button("Update API keys", use_container_width=True):
+            set_runtime_api_keys(openai_key, tavily_key)
+            get_graph.clear()
+            st.success("Runtime API configuration updated.")
+            st.rerun()
+
+        st.caption(f"OpenAI: {'configured' if get_openai_api_key() else 'missing'}")
+        tavily_configured = bool(os.getenv("TAVILY_API_KEY"))
+        st.caption(f"Tavily news search: {'configured' if tavily_configured else 'not configured'}")
+        st.caption("Market data: yfinance with cached/offline fallback")
+
+
+def _render_sidebar_portfolio() -> None:
+    """Manage the same portfolio object consumed by portfolio and chat agents."""
+    st.markdown("##### Portfolio")
+    option = st.radio(
+        "Portfolio options",
+        ["Load sample portfolio", "Enter custom portfolio"],
+        key="sidebar_portfolio_option",
+        label_visibility="collapsed",
+    )
+
+    if option == "Load sample portfolio":
+        sample_file = BASE_DIR / "src/data/sample_portfolios.json"
+        sample_data = json.loads(sample_file.read_text()) if sample_file.exists() else {}
+        portfolio_type = st.selectbox(
+            "Sample portfolio type",
+            ["Balanced", "Conservative"],
+            key="sidebar_portfolio_type",
+        )
+        if st.button("📊 Load sample portfolio", use_container_width=True):
+            sample_key = "balanced" if portfolio_type == "Balanced" else "conservative"
+            st.session_state.active_portfolio = {
+                "holdings": sample_data.get(sample_key, {}).get("holdings", []),
+                "risk_appetite": "Moderate" if sample_key == "balanced" else "Conservative",
+            }
+            st.success(f"{portfolio_type} portfolio loaded.")
+            st.rerun()
+    else:
+        if "sidebar_custom_holdings" not in st.session_state:
+            st.session_state.sidebar_custom_holdings = []
+
+        with st.expander("📝 Enter portfolio details", expanded=True):
+            input_columns = st.columns(2)
+            with input_columns[0]:
+                symbol = st.text_input("Symbol", key="sidebar_new_symbol", placeholder="AAPL")
+                quantity = st.number_input("Quantity", min_value=0.01, value=10.0, step=0.01, key="sidebar_new_quantity")
+            with input_columns[1]:
+                price = st.number_input("Current price", min_value=0.01, value=100.0, step=0.01, key="sidebar_new_price")
+                category = st.text_input("Category", value="US Equities", key="sidebar_new_category")
+
+            if st.button("➕ Add holding", use_container_width=True):
+                if not symbol.strip():
+                    st.error("Symbol is required.")
+                else:
+                    st.session_state.sidebar_custom_holdings.append({
+                        "symbol": symbol.upper().strip(),
+                        "shares": float(quantity),
+                        "price": float(price),
+                        "category": category.strip() or "Other",
+                        "expense_ratio": 0.0,
+                    })
+                    st.rerun()
+
+            custom_holdings = st.session_state.sidebar_custom_holdings
+            if custom_holdings:
+                st.dataframe(pd.DataFrame(custom_holdings), hide_index=True, use_container_width=True)
+                custom_risk = st.select_slider(
+                    "Portfolio risk level",
+                    ["Conservative", "Moderate", "Aggressive"],
+                    value="Moderate",
+                    key="sidebar_custom_risk",
+                )
+                save_columns = st.columns(2)
+                with save_columns[0]:
+                    if st.button("💾 Save portfolio", type="primary", use_container_width=True):
+                        st.session_state.active_portfolio = {
+                            "holdings": list(custom_holdings),
+                            "risk_appetite": custom_risk,
+                        }
+                        st.session_state.sidebar_custom_holdings = []
+                        st.success("Portfolio saved.")
+                        st.rerun()
+                with save_columns[1]:
+                    if st.button("🔄 Clear holdings", use_container_width=True):
+                        st.session_state.sidebar_custom_holdings = []
+                        st.rerun()
+
+    if st.session_state.active_portfolio:
+        holdings = st.session_state.active_portfolio.get("holdings", [])
+        st.caption(f"Active portfolio: {len(holdings)} holding(s)")
+        if st.button("🗑️ Clear active portfolio", use_container_width=True):
+            st.session_state.active_portfolio = {}
+            st.session_state.portfolio_analysis = None
+            st.rerun()
+
+
 # ── Sidebar ───────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 📈 AI Finance Assistant")
     st.caption("Democratizing Financial Literacy via Multi-Agent AI")
+    st.divider()
+
+    _render_api_configuration()
     st.divider()
 
     if st.button("➕ New Chat Session", use_container_width=True, type="primary"):
@@ -115,6 +298,39 @@ with st.sidebar:
                     st.rerun()
 
     st.divider()
+    _render_sidebar_portfolio()
+    st.divider()
+    st.markdown("##### Investor Profile")
+    st.session_state.user_profile["experience_level"] = st.selectbox(
+        "Experience level",
+        ["Beginner", "Intermediate", "Advanced"],
+        index=["Beginner", "Intermediate", "Advanced"].index(
+            st.session_state.user_profile["experience_level"]
+        ),
+    )
+    st.session_state.user_profile["goals"] = st.multiselect(
+        "Financial goals",
+        ["Retirement", "Emergency fund", "Home purchase", "Education", "General wealth"],
+        default=st.session_state.user_profile["goals"],
+    )
+    st.divider()
+    st.markdown("##### Quick Actions")
+    if st.button("🔄 Clear current conversation", use_container_width=True):
+        _clear_current_chat()
+        st.rerun()
+    if st.button("📈 Refresh market data", use_container_width=True):
+        clear_market_cache()
+        st.rerun()
+    st.session_state.show_confidence = st.checkbox(
+        "Show routing details", value=st.session_state.get("show_confidence", True)
+    )
+    st.session_state.show_sources = st.checkbox(
+        "Show knowledge sources", value=st.session_state.get("show_sources", False)
+    )
+    st.session_state.show_suggestions = st.checkbox(
+        "Show suggestions", value=st.session_state.get("show_suggestions", True)
+    )
+    st.divider()
     st.markdown("##### Quick Tickers")
     st.caption("SPY • VOO • VTI • BND • QQQ • AAPL • MSFT")
     st.divider()
@@ -129,6 +345,7 @@ tabs = st.tabs([
     "📊 Portfolio Analysis",
     "📈 Market Overview",
     "🎯 Goal Planning",
+    "📚 Knowledge",
 ])
 
 # ── TAB 1: CHAT ASSISTANT ─────────────────────────────────────────────
@@ -136,7 +353,7 @@ with tabs[0]:
     current = _current()
 
     def _render_routing_meta(meta: dict):
-        if not meta or not meta.get("agents"):
+        if not st.session_state.get("show_confidence", True) or not meta or not meta.get("agents"):
             return
         with st.expander("🔍 Routing & Execution Details", expanded=False):
             st.markdown(f"**Agents Activated:** `{', '.join(meta['agents'])}`")
@@ -153,7 +370,8 @@ with tabs[0]:
                     _render_routing_meta(current["turns"][turn_idx])
                 turn_idx += 1
 
-    prompt = st.chat_input("Ask a financial question (e.g., 'What is DCA and what is the price of VTI?')...")
+    pending_prompt = st.session_state.pop("pending_chat_question", None)
+    prompt = pending_prompt or st.chat_input("Ask a financial question (e.g., 'What is DCA and what is the price of VTI?')...")
     if prompt:
         current["messages"].append({"role": "user", "content": prompt})
         if current["title"] == "New Session":
@@ -168,8 +386,26 @@ with tabs[0]:
                     result = graph.invoke(
                         {
                             "user_query": prompt,
-                            "messages": [HumanMessage(content=prompt)],
-                            "user_profile": {},
+                            "messages": [
+                                HumanMessage(content=message["content"])
+                                if message["role"] == "user"
+                                else AIMessage(content=message["content"])
+                                for message in current["messages"]
+                            ],
+                            "user_profile": st.session_state.user_profile,
+                            "portfolio": st.session_state.active_portfolio,
+                            "context": {
+                                "user_profile": st.session_state.user_profile,
+                                "portfolio": st.session_state.active_portfolio,
+                                "conversation_history": [
+                                    f"{message['role']}: {message['content']}"
+                                    for message in current["messages"]
+                                ],
+                            },
+                            "conversation_history": [
+                                f"{message['role']}: {message['content']}"
+                                for message in current["messages"]
+                            ],
                             "tasks": [],
                             "requires_synthesis": False,
                             "agent_results": None,
@@ -209,112 +445,148 @@ with tabs[0]:
         current["turns"].append(meta)
         st.rerun()
 
+    st.markdown("**Try these questions:**")
+    example_columns = st.columns(3)
+    examples = [
+        "What are ETFs?",
+        "How do I diversify my portfolio?",
+        "Explain compound interest",
+        "Should I invest in stocks or bonds?",
+        "How large should an emergency fund be?",
+        "How do 401(k)s work?",
+    ]
+    for index, example in enumerate(examples):
+        with example_columns[index % 3]:
+            if st.button(example, key=f"example_question_{index}", use_container_width=True):
+                st.session_state.pending_chat_question = example
+                st.rerun()
+
 
 # ── TAB 2: PORTFOLIO ANALYSIS ─────────────────────────────────────────
 with tabs[1]:
-    st.subheader("Portfolio Allocation & Health Check")
+    st.subheader("Portfolio Analysis")
 
     sample_file = BASE_DIR / "src/data/sample_portfolios.json"
-    sample_data = {}
-    if sample_file.exists():
-        with open(sample_file, "r") as f:
-            sample_data = json.load(f)
+    sample_data = json.loads(sample_file.read_text()) if sample_file.exists() else {}
 
-    col_p1, col_p2 = st.columns([3, 2])
-    with col_p1:
-        portfolio_mode = st.selectbox(
-            "Choose Portfolio Template or Custom Input:",
-            ["Moderate Growth (60/40)", "Conservative Income", "Custom JSON Input"],
-        )
-    with col_p2:
-        risk_appetite = st.selectbox(
-            "Target Risk Appetite:",
-            ["Conservative", "Moderate", "Aggressive"],
-            index=1,
-        )
-
-    if portfolio_mode == "Moderate Growth (60/40)":
-        holdings = sample_data.get("balanced", {}).get("holdings", [])
-    elif portfolio_mode == "Conservative Income":
-        holdings = sample_data.get("conservative", {}).get("holdings", [])
+    if not st.session_state.active_portfolio:
+        st.info("No portfolio loaded. Load a sample, enter holdings manually, or import a CSV.")
+        setup_cols = st.columns(3)
+        with setup_cols[0]:
+            template = st.selectbox("Sample portfolio", ["Balanced", "Conservative"])
+            if st.button("📊 Load sample portfolio", use_container_width=True):
+                key = "balanced" if template == "Balanced" else "conservative"
+                st.session_state.active_portfolio = {
+                    "holdings": sample_data.get(key, {}).get("holdings", []),
+                    "risk_appetite": "Moderate" if key == "balanced" else "Conservative",
+                }
+                st.rerun()
+        with setup_cols[1]:
+            st.markdown("**Import CSV**")
+            uploaded = st.file_uploader("CSV holdings", type=["csv"], label_visibility="collapsed")
+            if uploaded is not None and st.button("📤 Import uploaded CSV", use_container_width=True):
+                imported = pd.read_csv(uploaded).to_dict("records")
+                st.session_state.active_portfolio = {"holdings": imported, "risk_appetite": "Moderate"}
+                st.rerun()
+        with setup_cols[2]:
+            st.markdown("**Manual entry**")
+            manual_json = st.text_area("Holdings JSON", value="[]", height=120)
+            if st.button("✏️ Use manual holdings", use_container_width=True):
+                try:
+                    imported = json.loads(manual_json)
+                    if not isinstance(imported, list):
+                        raise ValueError("Holdings must be a JSON list")
+                    st.session_state.active_portfolio = {"holdings": imported, "risk_appetite": "Moderate"}
+                    st.rerun()
+                except (ValueError, json.JSONDecodeError) as exc:
+                    st.error(f"Invalid holdings: {exc}")
     else:
-        raw_json = st.text_area(
-            "Enter Holdings JSON:",
-            value=json.dumps([
-                {"symbol": "VOO", "shares": 20, "price": 495.0, "category": "US Equities", "expense_ratio": 0.03},
-                {"symbol": "VXUS", "shares": 30, "price": 60.0, "category": "Intl Equities", "expense_ratio": 0.08},
-                {"symbol": "BND", "shares": 25, "price": 72.0, "category": "Bonds", "expense_ratio": 0.03},
-            ], indent=2),
-            height=130,
+        portfolio = st.session_state.active_portfolio
+        holdings = portfolio.get("holdings", [])
+        risk_appetite = st.selectbox(
+            "Target risk appetite",
+            ["Conservative", "Moderate", "Aggressive"],
+            index=["Conservative", "Moderate", "Aggressive"].index(portfolio.get("risk_appetite", "Moderate")),
         )
-        try:
-            holdings = json.loads(raw_json)
-        except Exception:
-            st.error("Invalid JSON format.")
-            holdings = []
+        portfolio["risk_appetite"] = risk_appetite
 
-    if holdings:
-        df_holdings = pd.DataFrame(holdings)
-        st.markdown("##### Current Holdings")
-        st.dataframe(df_holdings, use_container_width=True)
+        if st.button("🗑️ Clear portfolio"):
+            st.session_state.active_portfolio = {}
+            st.session_state.portfolio_analysis = None
+            st.rerun()
 
-        res_str = calculate_portfolio_metrics.invoke({
+        st.markdown("##### Holdings breakdown")
+        st.dataframe(pd.DataFrame(holdings), use_container_width=True, hide_index=True)
+        metrics = json.loads(calculate_portfolio_metrics.invoke({
             "holdings_json": json.dumps(holdings),
             "user_risk_appetite": risk_appetite,
-        })
-        res_data = json.loads(res_str)
+        }))
+        if metrics.get("status") == "success" or "total_value" in metrics:
+            columns = st.columns(4)
+            columns[0].metric("Total value", f"${metrics['total_value']:,.2f}")
+            columns[1].metric("Holdings", len(holdings))
+            columns[2].metric("Diversification", f"{metrics['diversification_score']} / 100")
+            columns[3].metric("Risk status", metrics["risk_alignment"])
+            st.info(metrics.get("recommendation", ""))
+            if metrics.get("concentrated_positions"):
+                st.warning("Concentration risk: " + ", ".join(metrics["concentrated_positions"]))
 
-        if "total_value" in res_data:
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total Value", f"${res_data['total_value']:,.2f}")
-            c2.metric("Weighted Exp Ratio", f"{res_data['weighted_expense_ratio_pct']:.3f}%")
-            c3.metric("Diversification Score", f"{res_data.get('diversification_score', 0)} / 100")
-            c4.metric("Risk Status", res_data.get("risk_alignment", "Aligned"))
-
-            st.info(f"💡 **Assessment & Recommendation:** {res_data.get('recommendation', '')}")
-
-            if res_data.get("concentrated_positions"):
-                st.warning(f"⚠️ **Concentration Risk Flag (>25% position):** {', '.join(res_data['concentrated_positions'])}")
-
-            st.markdown("##### Asset Allocation Breakdown")
-            alloc_df = pd.DataFrame(
-                list(res_data["allocation_percentages"].items()),
+            allocation = pd.DataFrame(
+                list(metrics["allocation_percentages"].items()),
                 columns=["Category", "Percentage"],
             )
+            chart_cols = st.columns(2)
+            with chart_cols[0]:
+                st.plotly_chart(px.pie(allocation, names="Category", values="Percentage", hole=0.45), use_container_width=True)
+            with chart_cols[1]:
+                st.plotly_chart(px.bar(allocation, x="Category", y="Percentage", color="Category"), use_container_width=True)
 
-            col_pie, col_bar = st.columns(2)
-            with col_pie:
-                fig_pie = px.pie(
-                    alloc_df,
-                    names="Category",
-                    values="Percentage",
-                    hole=0.45,
-                    title="Allocation Distribution",
-                    color_discrete_sequence=px.colors.qualitative.Pastel,
+        if st.button("🔍 Analyze portfolio with specialist agent", type="primary", use_container_width=True):
+            try:
+                result = _invoke_graph(
+                    "Analyze my portfolio using the loaded holdings and explain allocation, diversification, fees, concentration risks, and risk alignment."
                 )
-                fig_pie.update_traces(textposition="inside", textinfo="percent+label")
-                st.plotly_chart(fig_pie, use_container_width=True)
-
-            with col_bar:
-                fig_bar = px.bar(
-                    alloc_df,
-                    x="Category",
-                    y="Percentage",
-                    title="Allocation Weights (%)",
-                    color="Category",
-                    color_discrete_sequence=px.colors.qualitative.Pastel,
-                )
-                st.plotly_chart(fig_bar, use_container_width=True)
+                st.session_state.portfolio_analysis = result.get("final_answer", "No analysis returned.")
+            except Exception as exc:
+                st.error(f"Portfolio analysis failed: {exc}")
+        if st.session_state.get("portfolio_analysis"):
+            st.markdown("##### Specialist analysis")
+            st.markdown(st.session_state.portfolio_analysis)
 
 
 # ── TAB 3: MARKET OVERVIEW ────────────────────────────────────────────
 with tabs[2]:
-    st.subheader("Live Market Quotes & Trend Analytics")
-    col_search, _ = st.columns([2, 2])
-    with col_search:
-        ticker_input = st.text_input("Enter Stock / ETF Symbol:", value="VOO").upper()
+    st.subheader("Market Overview")
+    st.markdown("##### Major indices")
+    index_columns = st.columns(4)
+    for index, data in enumerate(_get_market_indices()):
+        with index_columns[index]:
+            if data.get("current_price") is not None:
+                st.metric(
+                    data["label"],
+                    f"${data['current_price']:,.2f}",
+                    data.get("change_percent", "N/A"),
+                    delta_color="normal" if not str(data.get("change_percent", "-")).startswith("-") else "inverse",
+                )
+            else:
+                st.metric(data["label"], "N/A", "Data unavailable")
 
-    if ticker_input:
+    st.markdown("##### Stock / ETF lookup")
+    with st.form("market_lookup_form", clear_on_submit=False):
+        col_search, col_button = st.columns([3, 1])
+        with col_search:
+            ticker_input = st.text_input(
+                "Enter ticker or company name",
+                value="VOO",
+                placeholder="AAPL, MSFT, Microsoft, or VOO",
+            ).strip()
+        with col_button:
+            lookup = st.form_submit_button("Look up", type="primary", use_container_width=True)
+
+    if lookup:
+        st.session_state.last_ticker = ticker_input
+
+    if st.session_state.get("last_ticker") == ticker_input:
         quote_str = get_market_quote.invoke({"ticker": ticker_input})
         quote_data = json.loads(quote_str)
 
@@ -329,8 +601,9 @@ with tabs[2]:
             m3.metric("52-Week High", f"${quote_data.get('fifty_two_week_high', 0) or 0:.2f}")
             m4.metric("52-Week Low", f"${quote_data.get('fifty_two_week_low', 0) or 0:.2f}")
 
-            # Historical Trend Chart
-            hist_str = get_market_history.invoke({"ticker": ticker_input, "period": "6mo"})
+            display_ticker = quote_data.get("ticker", ticker_input)
+            st.caption(f"{quote_data.get('name', display_ticker)} • {quote_data.get('currency', 'USD')}")
+            hist_str = get_market_history.invoke({"ticker": display_ticker, "period": "6mo"})
             hist_data = json.loads(hist_str)
 
             if "close_prices" in hist_data:
@@ -343,80 +616,128 @@ with tabs[2]:
                     df_hist,
                     x="Date",
                     y="Close",
-                    title=f"{ticker_input} 6-Month Historical Performance",
+                    title=f"{display_ticker} 6-Month Historical Performance",
                     template="plotly_white",
                 )
                 fig_trend.update_traces(line_color="#2E7D32" if hist_data.get("period_return_pct", 0) >= 0 else "#C62828")
                 st.plotly_chart(fig_trend, use_container_width=True)
         else:
             st.error(quote_data.get("error", "Could not fetch ticker details."))
+            suggested_ticker = quote_data.get("suggested_ticker")
+            if suggested_ticker:
+                st.info(f"Did you mean **{suggested_ticker}**?")
+                if st.button(f"Look up {suggested_ticker}", key="suggested_ticker_lookup"):
+                    st.session_state.last_ticker = suggested_ticker
+                    st.rerun()
+            else:
+                st.caption("Check the symbol and try again. Examples: AAPL, MSFT, SPY, VOO, QQQ.")
 
 
 # ── TAB 4: GOAL PLANNING ──────────────────────────────────────────────
 with tabs[3]:
-    st.subheader("Risk-Aware Financial Goal & Wealth Projections")
+    st.subheader("Financial Goal Planning")
+    goal_tab, projection_tab = st.tabs(["Savings goal calculator", "Wealth projection"])
 
-    g1, g2, g3 = st.columns(3)
-    with g1:
-        init_deposit = st.number_input("Initial Investment ($):", value=5000, step=500)
-        monthly_contrib = st.number_input("Monthly Contribution ($):", value=500, step=50)
-    with g2:
-        risk_profile = st.selectbox("Investor Risk Profile:", ["Conservative", "Moderate", "Aggressive"], index=1)
-        years = st.slider("Investment Horizon (Years):", min_value=1, max_value=40, value=20, step=1)
-    with g3:
-        custom_rate = st.checkbox("Custom Return Override")
-        override_rate = st.number_input("Custom Return Rate (%):", value=7.5, step=0.5) if custom_rate else None
+    with goal_tab:
+        goal_cols = st.columns(2)
+        with goal_cols[0]:
+            goal_amount = st.number_input("Goal amount ($)", min_value=1000.0, value=100000.0, step=1000.0)
+            goal_years = st.number_input("Time horizon (years)", min_value=1, max_value=50, value=10, step=1)
+        with goal_cols[1]:
+            current_savings = st.number_input("Current savings ($)", min_value=0.0, value=10000.0, step=1000.0)
+            annual_return = st.slider("Expected annual return (%)", 0.0, 15.0, 7.0, 0.5) / 100
 
-    proj_str = project_goal_growth.invoke({
-        "initial_amount": float(init_deposit),
-        "monthly_contribution": float(monthly_contrib),
-        "years": int(years),
-        "risk_profile": risk_profile,
-        "annual_return_pct": float(override_rate) if override_rate else None,
-    })
-    proj_data = json.loads(proj_str)
+        if st.button("Calculate savings plan", type="primary", use_container_width=True):
+            plan = calculate_savings_plan(goal_amount, int(goal_years), current_savings, annual_return)
+            st.session_state.goal_plan = plan
 
-    p1, p2, p3, p4 = st.columns(4)
-    p1.metric("Projected Median Wealth", f"${proj_data['projected_median_value']:,.2f}")
-    p2.metric("Total Principal Contributed", f"${proj_data['total_contributed']:,.2f}")
-    p3.metric("Pessimistic Scenario", f"${proj_data['pessimistic_band_value']:,.2f}")
-    p4.metric("Optimistic Scenario", f"${proj_data['optimistic_band_value']:,.2f}")
+        if st.session_state.get("goal_plan"):
+            plan = st.session_state.goal_plan
+            metrics = st.columns(3)
+            metrics[0].metric("Monthly savings required", f"${plan['monthly_contribution_required']:,.2f}")
+            metrics[1].metric("Interest earned", f"${plan['interest_earned']:,.2f}")
+            metrics[2].metric("Final balance", f"${plan['final_balance']:,.2f}")
+            months = list(range(len(plan["monthly_balances"])))
+            st.plotly_chart(
+                go.Figure(go.Scatter(x=months, y=plan["monthly_balances"], name="Projected balance")),
+                use_container_width=True,
+            )
+            if plan["feasible"]:
+                st.success("This target is within the calculator's contribution feasibility threshold.")
+            else:
+                st.warning("The required monthly contribution is high. Consider a longer timeline or smaller target.")
 
-    st.info(f"🎯 **Suggested Strategy:** {proj_data.get('recommended_asset_mix', '')} at ~{proj_data.get('assumed_annual_return', '')} expected return.")
+    with projection_tab:
+        projection_cols = st.columns(3)
+        with projection_cols[0]:
+            init_deposit = st.number_input("Initial investment ($)", value=5000.0, step=500.0)
+            monthly_contrib = st.number_input("Monthly contribution ($)", value=500.0, step=50.0)
+        with projection_cols[1]:
+            risk_profile = st.selectbox("Risk profile", ["Conservative", "Moderate", "Aggressive"], index=1)
+            years = st.slider("Investment horizon (years)", 1, 40, 20, 1)
+        with projection_cols[2]:
+            custom_rate = st.checkbox("Custom return override")
+            override_rate = st.number_input("Custom return rate (%)", value=7.5, step=0.5) if custom_rate else None
 
-    # Multi-scenario growth curve
-    year_points = list(range(0, years + 1))
-    contrib_points = []
-    median_points = []
-    low_points = []
-    high_points = []
+        proj_data = json.loads(project_goal_growth.invoke({
+            "initial_amount": init_deposit,
+            "monthly_contribution": monthly_contrib,
+            "years": years,
+            "risk_profile": risk_profile,
+            "annual_return_pct": override_rate,
+        }))
+        projection_metrics = st.columns(4)
+        projection_metrics[0].metric("Expected wealth", f"${proj_data['projected_median_value']:,.2f}")
+        projection_metrics[1].metric("Principal contributed", f"${proj_data['total_contributed']:,.2f}")
+        projection_metrics[2].metric("Pessimistic", f"${proj_data['pessimistic_band_value']:,.2f}")
+        projection_metrics[3].metric("Optimistic", f"${proj_data['optimistic_band_value']:,.2f}")
+        st.info(f"Suggested asset mix: {proj_data['recommended_asset_mix']} at approximately {proj_data['assumed_annual_return']}.")
 
-    profile_rates = {"Conservative": (3.0, 4.5, 6.0), "Moderate": (5.0, 7.5, 10.0), "Aggressive": (6.5, 10.0, 13.5)}
-    r_low, r_med, r_high = profile_rates[risk_profile]
-    if override_rate:
-        r_med = override_rate
 
-    def _fv(r_pct, y):
-        r = (r_pct / 100.0) / 12.0
-        n = y * 12
-        return init_deposit + (monthly_contrib * n) if r == 0 else (init_deposit * ((1 + r) ** n)) + (monthly_contrib * (((1 + r) ** n - 1) / r))
+# ── TAB 5: KNOWLEDGE BASE ─────────────────────────────────────────────
+with tabs[4]:
+    st.subheader("Financial Knowledge Base")
+    st.caption("Search the curated investing and tax education articles used by the finance agents.")
 
-    for y in year_points:
-        contrib_points.append(init_deposit + (monthly_contrib * y * 12))
-        median_points.append(_fv(r_med, y))
-        low_points.append(_fv(r_low, y))
-        high_points.append(_fv(r_high, y))
-
-    fig_growth = go.Figure()
-    fig_growth.add_trace(go.Scatter(x=year_points, y=high_points, name="Optimistic Market Band", line=dict(dash="dot", color="#4CAF50")))
-    fig_growth.add_trace(go.Scatter(x=year_points, y=median_points, name="Expected Median Growth", line=dict(color="#1976D2", width=3)))
-    fig_growth.add_trace(go.Scatter(x=year_points, y=low_points, name="Conservative Market Band", line=dict(dash="dot", color="#FF9800")))
-    fig_growth.add_trace(go.Scatter(x=year_points, y=contrib_points, name="Principal Contributed", line=dict(dash="dash", color="#757575")))
-
-    fig_growth.update_layout(
-        title=f"Multi-Scenario Wealth Accumulation ({risk_profile} Profile)",
-        xaxis_title="Years",
-        yaxis_title="Portfolio Value ($)",
-        template="plotly_white",
+    knowledge_query = st.text_input(
+        "Search financial topics",
+        placeholder="e.g. diversification, compound interest, Roth IRA",
     )
-    st.plotly_chart(fig_growth, use_container_width=True)
+    knowledge_category = st.selectbox(
+        "Category",
+        ["All", "Investing Basics", "Tax Accounts", "Portfolio Management", "Risk & Planning"],
+    )
+
+    if st.button("Search knowledge base", type="primary") and knowledge_query:
+        try:
+            result = json.loads(search_financial_kb.invoke({
+                "query": knowledge_query,
+                "category": None if knowledge_category == "All" else knowledge_category,
+            }))
+            if result.get("results"):
+                st.success(f"Found {len(result['results'])} relevant articles.")
+                for index, document in enumerate(result["results"], start=1):
+                    with st.expander(f"{index}. {document.get('title', 'Untitled')}"):
+                        st.write(document.get("content", ""))
+                        st.caption(
+                            f"{document.get('category', 'General')} • "
+                            f"Reference: {document.get('id', 'N/A')} • "
+                            f"Relevance: {document.get('relevance_score', 0):.3f}"
+                        )
+            else:
+                st.warning(result.get("message", "No matching articles found."))
+                if st.button("Ask this question in Chat", key="knowledge_to_chat"):
+                    st.session_state.pending_chat_question = knowledge_query
+                    st.rerun()
+        except Exception as exc:
+            st.error(f"Knowledge search unavailable: {exc}")
+
+    st.markdown("##### Popular Topics")
+    topic_columns = st.columns(3)
+    for index, topic in enumerate([
+        "Investing basics",
+        "Diversification",
+        "Tax-advantaged accounts",
+    ]):
+        with topic_columns[index]:
+            st.info(topic)

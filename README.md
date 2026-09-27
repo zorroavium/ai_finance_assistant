@@ -1,4 +1,4 @@
-# AI Finance Assistant — Production Multi-Agent RAG System
+# AI Finance Assistant — Multi-Agent Financial Education App
 
 > **Democratizing Financial Literacy Through Intelligent Conversational AI**  
 > *Applied Agentic AI Capstone Project*
@@ -53,16 +53,16 @@
 ## 🚀 Key Features
 
 1. **6 Specialized Domain Agents**:
-   - `finance_qa`: Answers core investing concepts grounded in 54+ curated KB articles with citation IDs (`[ref: INV-001]`)[cite: 26].
-   - `portfolio_agent`: Deterministically calculates portfolio total values, asset allocation percentages, and weighted expense ratios[cite: 26].
-   - `market_agent`: Retrieves real-time stock/ETF metrics via `yfinance` with a 30-minute in-memory TTL cache and fallback resilience[cite: 26].
-   - `goal_agent`: Models compound interest future values and milestones across custom time horizons[cite: 26].
-   - `tax_agent`: Explains rules for tax-advantaged accounts (Roth IRA, Traditional IRA, 401(k), HSA) and capital gains[cite: 26].
-   - `news_agent`: Synthesizes macroeconomic shifts and sentiment for beginner investors[cite: 26].
-2. **Dynamic Task Decomposition**: Composite user queries (e.g., *"What is VOO price and how is it taxed in a Roth IRA?"*) are broken into distinct tasks executed in parallel[cite: 26].
-3. **Calibrated Confidence Scoring**: RAG retrieval evaluates cosine similarity against a calibrated threshold (`0.35` on `text-embedding-3-small`), preventing hallucinations when topics fall outside the knowledge base[cite: 26].
-4. **State Isolation**: Agent scratchpads use a custom reducer (`reset_or_add`) to prevent cross-talk and reset temporary state between user turns[cite: 26].
-5. **Interactive Multi-Tab Dashboard**: Built with Streamlit, providing Chat, Portfolio Analysis, Live Market Lookup, and Compound Growth visualizers[cite: 26].
+    - `finance_qa`: Answers investing concepts grounded in the curated knowledge base.
+    - `portfolio_agent`: Calculates allocation, diversification, concentration, risk alignment, and expense-ratio metrics.
+    - `market_agent`: Retrieves live stock/ETF data through `yfinance`, including dynamic company-name lookup, caching, retries, and fallbacks.
+    - `goal_agent`: Models compound-growth scenarios and financial milestones.
+    - `tax_agent`: Explains tax-advantaged accounts and capital-gains concepts using the tax knowledge category.
+    - `news_agent`: Adds optional Tavily-backed recent news context and explains market implications.
+2. **Dynamic Task Decomposition**: Composite questions are split into specialist tasks and dispatched in parallel through LangGraph `Send`.
+3. **Grounded Retrieval**: The RAG layer returns top-K documents, confidence scores, categories, and reference IDs. Finance Q&A and Tax outputs validate generated reference IDs against retrieved documents.
+4. **Context Preservation**: User profile, portfolio holdings, and recent conversation history are passed into specialist prompts.
+5. **Interactive Streamlit Dashboard**: The app contains Chat, Portfolio, Markets, Goals, and Knowledge tabs, plus sidebar API configuration, investor profile, portfolio management, chat sessions, and quick actions.
 
 ---
 
@@ -87,7 +87,7 @@ ai_finance_assistant/
 │   │   │   └── financial_glossary.json
 │   │   └── sample_portfolios.json # Starter templates (Balanced, Conservative)
 │   ├── rag/
-│   │   ├── vector_store.py        # In-memory vector store & cosine similarity
+│   │   ├── vector_store.py        # OpenAI embeddings, in-memory store & cosine similarity
 │   │   └── retriever.py           # RAG search tool with confidence scoring
 │   ├── tools/
 │   │   ├── market_tools.py        # Real-time yfinance quotes with 30-min TTL caching
@@ -106,14 +106,17 @@ ai_finance_assistant/
 │   ├── workflow/
 │   │   ├── state.py               # Central LangGraph state, Pydantic task schemas
 │   │   └── graph.py               # StateGraph compilation & checkpointer
+│   ├── utils/
+│   │   └── news_search.py         # Optional Tavily news client with caching
 │   └── web_app/
-│       └── app.py                 # Multi-tab Streamlit web application
+│       └── app.py                 # Five-tab Streamlit web application
+├── mcp_server.py                  # Optional FastMCP quote/portfolio tools
 └── tests/
     ├── test_tools.py              # Unit tests for portfolio and goal calculators
     ├── test_rag.py                # Unit tests for vector search & confidence scoring
     ├── test_market_tools.py       # Unit tests for live pricing & cache TTL
     ├── test_agents.py             # Agent execution & tool calling tests
-    ├── test_routing.py            # Orchestrator classification & decomposition tests
+    ├── test_router_agent.py       # Router fallback and empty-router tests
     ├── test_edge_cases.py         # Edge cases & malformed input handling
     └── test_workflow.py           # End-to-end multi-agent graph integration tests
 
@@ -139,17 +142,18 @@ ai_finance_assistant/
 cd ai_finance_assistant
 
 # 2. Create virtual environment
-python3 -m venv venv
+python3 -m venv .venv
 
 # 3. Activate virtual environment
-source venv/bin/activate    # On Windows: venv\Scripts\activate
+source .venv/bin/activate    # On Windows: .venv\Scripts\activate
 
 # 4. Install dependencies
 pip install -r requirements.txt
 
 # 5. Environment configuration
 cp .env.example .env
-# Add your OPENAI_API_KEY inside the .env file
+# Add your OPENAI_API_KEY inside the .env file.
+# Optional: TAVILY_API_KEY enables recent news search.
 
 ```
 
@@ -160,7 +164,9 @@ cp .env.example .env
 Execute the full test suite with coverage reporting:
 
 ```bash
-pytest tests/ -v
+python -m pytest -q --cov=src --cov-report=term-missing
+
+# Latest verified baseline: 38 tests passing, 81% coverage.
 
 ```
 
@@ -180,3 +186,20 @@ streamlit run src/web_app/app.py
 ## ⚖️ Regulatory & Educational Disclaimer
 
 The AI Finance Assistant is designed strictly for educational and informational purposes. It does not offer personalized investment, financial, legal, or tax advice. Market quotes are retrieved with caching and may be delayed.
+
+## Optional MCP Server
+
+The optional FastMCP server exposes `get_quote(ticker)` and `evaluate_portfolio(holdings_json, user_risk_appetite)`. Both reuse the production market and portfolio tools.
+
+Run it locally with:
+
+```bash
+python mcp_server.py
+```
+
+## Known Limitations
+
+- The active RAG implementation uses an in-memory cosine-similarity store; it is not FAISS-backed.
+- Recent news search requires `TAVILY_API_KEY`; without it, the news agent uses model knowledge only.
+- Market data depends on external Yahoo Finance availability and may use fallback benchmark data.
+- MCP currently exposes quote and portfolio tools only and has limited automated coverage.

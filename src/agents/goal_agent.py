@@ -5,7 +5,8 @@ Goal Planning Agent — Calculates compound growth projections and milestone tim
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 
-from src.core.config import CONFIG, OPENAI_API_KEY
+from src.agents.base import contextualize_query
+from src.core.config import CONFIG, get_openai_api_key
 from src.tools.goal_tools import project_goal_growth
 from src.workflow.state import FinanceAssistantState
 
@@ -30,13 +31,13 @@ def goal_agent_node(state: FinanceAssistantState) -> dict:
             query = getattr(task, "query", query) if hasattr(task, "query") else task.get("query", query)
             break
 
-    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=TEMPERATURE, api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model=PRIMARY_MODEL, temperature=TEMPERATURE, api_key=get_openai_api_key())
     tools = [project_goal_growth]
     llm_with_tools = llm.bind_tools(tools)
 
     messages = [
         SystemMessage(content=GOAL_SYSTEM_PROMPT),
-        HumanMessage(content=query)
+        HumanMessage(content=contextualize_query(query, state))
     ]
 
     response = llm_with_tools.invoke(messages)

@@ -1,6 +1,7 @@
 import json
 from src.tools.portfolio_tools import calculate_portfolio_metrics
-from src.tools.goal_tools import project_goal_growth
+from src.tools.goal_tools import calculate_savings_plan, project_goal_growth
+from src.core.config import set_runtime_api_keys
 
 
 def test_calculate_portfolio_metrics_diversification_and_risk():
@@ -45,3 +46,24 @@ def test_risk_aware_goal_growth():
     assert res["optimistic_band_value"] > res["projected_median_value"]
     assert res["pessimistic_band_value"] < res["projected_median_value"]
     assert "90% Equities" in res["recommended_asset_mix"]
+
+
+def test_calculate_savings_plan_reaches_goal():
+    result = calculate_savings_plan(
+        goal_amount=100000.0,
+        timeline_years=10,
+        current_savings=10000.0,
+        expected_return=0.07,
+    )
+
+    assert result["monthly_contribution_required"] > 0
+    assert abs(result["final_balance"] - 100000.0) < 1.0
+    assert result["interest_earned"] > 0
+
+
+def test_runtime_api_key_updates(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    set_runtime_api_keys("test-openai", "test-tavily")
+    assert __import__("os").environ["OPENAI_API_KEY"] == "test-openai"
+    assert __import__("os").environ["TAVILY_API_KEY"] == "test-tavily"

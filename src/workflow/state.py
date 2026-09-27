@@ -27,10 +27,13 @@ class RoutingDecision(BaseModel):
     tasks: list[AgentTask] = Field(description="1 or more agent tasks.")
     requires_synthesis: bool = Field(default=False, description="True if parallel outputs require merging.")
 
-class FinanceAssistantState(TypedDict):
+class FinanceAssistantState(TypedDict, total=False):
     user_query: str
     messages: Annotated[list[AnyMessage], operator.add]
     user_profile: dict
+    portfolio: dict
+    context: dict
+    conversation_history: list[str]
     tasks: list[AgentTask]
     requires_synthesis: bool
     agent_results: Annotated[list[dict], reset_or_add]

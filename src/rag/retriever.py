@@ -30,7 +30,7 @@ def validate_and_format_citations(text: str, retrieved_docs: list[dict]) -> str:
         ref_id = match.group(1).strip()
         if ref_id in valid_ids:
             return f"[ref: {ref_id}]"
-        return ""  # Strip hallucinations or nonexistent IDs
+        return ""  # Strip hallucinated or unavailable reference IDs
         
     return re.sub(r"\[ref:\s*([A-Za-z0-9_-]+)\]", _replace_tag, text)
 
