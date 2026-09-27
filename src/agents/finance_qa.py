@@ -15,7 +15,7 @@ from src.workflow.state import FinanceAssistantState
 PRIMARY_MODEL = CONFIG.get("models", {}).get("primary_model", "gpt-4o")
 TEMPERATURE = CONFIG.get("models", {}).get("temperature", 0.2)
 
-QA_SYSTEM_PROMPT = """You are the Finance Q&A Specialist for the AI Finance Assistant.
+QA_SYSTEM_PROMPT = """You are the Finance Q&A Specialist for the Finnie - Personal Finance Agent.
 Your mission is to provide clear, educational, and jargon-free explanations of financial concepts.
 
 RULES:

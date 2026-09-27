@@ -1,7 +1,7 @@
-# AI Finance Assistant — Technical Design Document (TDD)
+# Finnie - Personal Finance Agent — Technical Design Document (TDD)
 
 ## 1. Executive Summary & Design Principles
-The **AI Finance Assistant** is a multi-agent conversational AI system designed to democratize financial education, provide portfolio analysis, contextualize live market data, and model financial goals.
+The **Finnie - Personal Finance Agent** is a multi-agent conversational AI system designed to democratize financial education, provide portfolio analysis, contextualize live market data, and model financial goals.
 
 ### Guiding Principles
 - **Separation of Concerns:** Distinct specialist nodes for domain-isolated execution.

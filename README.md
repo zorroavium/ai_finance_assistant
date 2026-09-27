@@ -1,4 +1,4 @@
-# AI Finance Assistant — Multi-Agent Financial Education App
+# Finnie - Personal Finance Agent — Multi-Agent Financial Education App
 
 > **Democratizing Financial Literacy Through Intelligent Conversational AI**  
 > *Applied Agentic AI Capstone Project*
@@ -185,7 +185,7 @@ streamlit run src/web_app/app.py
 
 ## ⚖️ Regulatory & Educational Disclaimer
 
-The AI Finance Assistant is designed strictly for educational and informational purposes. It does not offer personalized investment, financial, legal, or tax advice. Market quotes are retrieved with caching and may be delayed.
+The Finnie - Personal Finance Agent is designed strictly for educational and informational purposes. It does not offer personalized investment, financial, legal, or tax advice. Market quotes are retrieved with caching and may be delayed.
 
 ## Optional MCP Server
 

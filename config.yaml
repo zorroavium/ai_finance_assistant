@@ -1,6 +1,6 @@
-# AI Finance Assistant Configuration
+# Finnie - Personal Finance Agent Configuration
 app:
-  name: "AI Finance Assistant"
+  name: "Finnie - Personal Finance Agent"
   version: "1.0.0"
   log_level: "INFO"
 

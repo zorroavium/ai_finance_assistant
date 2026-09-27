@@ -11,7 +11,7 @@ from src.workflow.state import FinanceAssistantState
 
 PRIMARY_MODEL = CONFIG.get("models", {}).get("primary_model", "gpt-4o")
 
-CHAT_SYSTEM_PROMPT = """You are the friendly concierge for the AI Finance Assistant.
+CHAT_SYSTEM_PROMPT = """You are the friendly concierge for the Finnie - Personal Finance Agent.
 Handle greetings, goodbyes, and explain what topics you can help with (Investing Basics, Portfolio Analysis, Real-time Market Quotes, Goal Planning, Tax Account Rules, and Market News).
 """
 

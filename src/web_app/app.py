@@ -1,5 +1,5 @@
 """
-AI Finance Assistant — Interactive Multi-Tab Streamlit Dashboard.
+Finnie - Personal Finance Agent — Interactive Multi-Tab Streamlit Dashboard.
 Features: Multi-agent Chat, Portfolio Analytics, Live Market Tickers & Trends, and Goal Projections.
 """
 
@@ -27,7 +27,7 @@ from src.tools.portfolio_tools import calculate_portfolio_metrics
 from src.workflow.graph import build_finance_graph
 
 st.set_page_config(
-    page_title="AI Finance Assistant",
+    page_title="Finnie - Personal Finance Agent",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -268,7 +268,7 @@ def _render_sidebar_portfolio() -> None:
 
 # ── Sidebar ───────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 📈 AI Finance Assistant")
+    st.markdown("### 📈 Finnie - Personal Finance Agent")
     st.caption("Democratizing Financial Literacy via Multi-Agent AI")
     st.divider()
 
@@ -337,7 +337,7 @@ with st.sidebar:
     st.caption("⚡ Powered by LangGraph, OpenAI & yfinance")
 
 
-st.title("AI Finance Assistant")
+st.title("Finnie - Personal Finance Agent")
 st.caption("Multi-agent financial guidance, real-time analytics, and goal modeling.")
 
 tabs = st.tabs([

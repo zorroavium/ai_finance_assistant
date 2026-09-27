@@ -14,7 +14,7 @@ from src.workflow.state import AgentTask, FinanceAssistantState
 
 ROUTER_MODEL = CONFIG.get("models", {}).get("router_model", "gpt-4o")
 
-ORCHESTRATOR_SYSTEM_PROMPT = """You are the Lead Routing Orchestrator for the AI Finance Assistant.
+ORCHESTRATOR_SYSTEM_PROMPT = """You are the Lead Routing Orchestrator for the Finnie - Personal Finance Agent.
 Your job is to analyze user queries, decompose multi-intent questions into discrete tasks, and select the optimal specialist agent for each task.
 
 SPECIALIST AGENTS AVAILABLE:

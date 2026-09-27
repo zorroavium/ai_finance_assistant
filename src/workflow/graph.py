@@ -1,5 +1,5 @@
 """
-LangGraph Workflow Assembly for the AI Finance Assistant.
+LangGraph Workflow Assembly for the Finnie - Personal Finance Agent.
 Connects orchestrator, specialist agent nodes, and synthesizer with in-memory checkpointer.
 """
 
